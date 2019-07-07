@@ -1,0 +1,4 @@
+resources/
+.idea/
+/target
+**/*.rs.bk
