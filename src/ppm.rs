@@ -1,9 +1,5 @@
-use std::{
-    fs::File,
-    path::Path,
-    io::Write
-};
 use core::fmt::Write as FmtWrite;
+use std::{fs::File, io::Write, path::Path};
 
 use itertools::Itertools;
 

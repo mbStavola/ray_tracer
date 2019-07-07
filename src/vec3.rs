@@ -1,8 +1,8 @@
-use std::ops::{AddAssign, DivAssign, MulAssign, Neg, SubAssign, Index, Add, Mul, Div, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Clone, Default)]
 pub struct Vec3 {
-    e: [f64; 3]
+    e: [f64; 3],
 }
 
 impl Vec3 {
@@ -12,9 +12,7 @@ impl Vec3 {
 
     pub fn new(e0: f64, e1: f64, e3: f64) -> Vec3 {
         let e = [e0, e1, e3];
-        Vec3 {
-            e
-        }
+        Vec3 { e }
     }
 
     #[inline(always)]

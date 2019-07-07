@@ -8,7 +8,7 @@ pub trait Hittable {
 pub struct Hit {
     t: f64,
     p: Vec3,
-    normal: Vec3
+    normal: Vec3,
 }
 
 impl Hit {
@@ -25,7 +25,6 @@ impl Hit {
     }
 }
 
-
 impl Hittable for Vec<Box<dyn Hittable>> {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit> {
         let mut min_distance = t_max;
@@ -38,21 +37,18 @@ impl Hittable for Vec<Box<dyn Hittable>> {
             }
         }
 
-        return nearest_hit
+        return nearest_hit;
     }
 }
 
 pub struct Sphere {
     center: Vec3,
-    radius: f64
+    radius: f64,
 }
 
 impl Sphere {
     pub fn new(center: Vec3, radius: f64) -> Sphere {
-        Sphere {
-            center,
-            radius
-        }
+        Sphere { center, radius }
     }
 }
 
@@ -84,12 +80,8 @@ impl Hittable for Sphere {
         let p = ray.point_at(t);
         let normal = (&p - &self.center) / self.radius;
 
-        let hit = Hit {
-            t,
-            p,
-            normal
-        };
+        let hit = Hit { t, p, normal };
 
-        return Some(hit)
+        return Some(hit);
     }
 }

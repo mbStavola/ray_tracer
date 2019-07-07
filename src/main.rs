@@ -14,14 +14,18 @@ const NX: usize = 1280;
 const NY: usize = 720;
 
 mod camera;
-mod ppm;
-mod vec3;
-mod ray;
 mod hittable;
+mod ppm;
+mod ray;
+mod vec3;
 
 fn color(ray: &Ray, world: &Vec<Box<dyn Hittable>>) -> Vec3 {
     if let Some(hit) = world.hit(ray, 0.0, f64::INFINITY) {
-        0.5 * Vec3::new(hit.normal().x() + 1.0, hit.normal().y() + 1.0, hit.normal().z() + 1.0)
+        0.5 * Vec3::new(
+            hit.normal().x() + 1.0,
+            hit.normal().y() + 1.0,
+            hit.normal().z() + 1.0,
+        )
     } else {
         let unit = ray.direction().unit();
         let t = 0.5 * (unit.y() + 1.0);
@@ -38,7 +42,7 @@ fn main() {
 
     let world: Vec<Box<dyn Hittable>> = vec![
         Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)),
-        Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0))
+        Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)),
     ];
 
     let mut buffer = vec![];
@@ -46,7 +50,8 @@ fn main() {
         for i in 0..NX {
             let u = (i as f64) / (NX as f64);
             let v = (j as f64) / (NY as f64);
-            let direction = lower_left_corner.clone() + u * horizontal.clone() + v * vertical.clone();
+            let direction =
+                lower_left_corner.clone() + u * horizontal.clone() + v * vertical.clone();
             let ray = Ray::new(origin.clone(), direction);
             let pixel = 255.99 * color(&ray, &world);
 
