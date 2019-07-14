@@ -21,6 +21,14 @@ impl ScatterResponse {
             attenuation,
         }
     }
+
+    pub fn scattered(&self) -> &Ray {
+        &self.scattered
+    }
+
+    pub fn attenuation(&self) -> &Vec3 {
+        &self.attenuation
+    }
 }
 
 #[derive(Clone)]

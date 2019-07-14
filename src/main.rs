@@ -17,8 +17,8 @@ use std::cell::RefCell;
 
 const OUTPUT_PATH: &str = "/home/mbs/workspace/rust/ray_tracer/resources/foo.ppm";
 
-const NX: usize = 1280;
-const NY: usize = 720;
+const NX: usize = 200;
+const NY: usize = 100;
 const NS: usize = 100;
 
 mod camera;
@@ -39,12 +39,20 @@ fn random_in_unit_sphere() -> Vec3 {
     p
 }
 
-fn color<'a>(ray: &Ray, world: &'a Vec<Shape<'a>>) -> Vec3 {
+fn color<'a>(ray: &Ray, world: &'a Vec<Shape<'a>>, depth: u8) -> Vec3 {
     if let Some(hit) = world.hit(ray, 0.001, f64::INFINITY) {
         let target = hit.p() + hit.normal() + random_in_unit_sphere();
         let bounce = Ray::new(hit.p().clone(), target - hit.p().clone());
 
-        0.5 * color(&bounce, world)
+        if depth > 50 {
+            return Vec3::new(0.0, 0.0, 0.0)
+        }
+
+        if let Some(scatter) = hit.material().scatter(ray, &hit) {
+            color(scatter.scattered(), world, depth + 1) * scatter.attenuation().clone()
+        } else {
+            Vec3::new(0.0, 0.0, 0.0)
+        }
     } else {
         let unit = ray.direction().unit();
         let t = 0.5 * (unit.y() + 1.0);
@@ -60,10 +68,10 @@ fn main() {
     let sphere_a = Shape::sphere(0.0, 0.0, -1.0, 0.5, &material_a);
 
     let material_b = Lambertian::new(Vec3::new(0.8, 0.8, 0.0));
-    let sphere_b = Shape::sphere(0.0, -100.5, -1.0, 100.0, &material_a);
+    let sphere_b = Shape::sphere(0.0, -100.5, -1.0, 100.0, &material_b);
 
     let material_c = Metal::new(Vec3::new(0.8, 0.6, 0.2));
-    let sphere_c = Shape::sphere(-1.0, 0.0, -1.0, 0.5, &material_c);
+    let sphere_c = Shape::sphere(1.0, 0.0, -1.0, 0.5, &material_c);
 
     let material_d = Metal::new(Vec3::new(0.8, 0.8, 0.8));
     let sphere_d = Shape::sphere(-1.0, 0.0, -1.0, 0.5, &material_d);
@@ -79,7 +87,7 @@ fn main() {
                 let v = (j as f64 + drand48()) / (NY as f64);
 
                 let ray = camera.ray(u, v);
-                pixel += color(&ray, &world);
+                pixel += color(&ray, &world, 0);
             }
             pixel /= NS as f64;
             pixel = Vec3::new(pixel.r().sqrt(), pixel.g().sqrt(), pixel.b().sqrt());

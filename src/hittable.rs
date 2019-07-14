@@ -25,6 +25,10 @@ impl Hit<'_> {
     pub fn normal(&self) -> &Vec3 {
         &self.normal
     }
+
+    pub fn material(&self) -> &'_ dyn Material {
+        self.material
+    }
 }
 
 pub struct Sphere<'a> {
