@@ -113,6 +113,18 @@ impl Add<&Vec3> for Vec3 {
     }
 }
 
+impl Add<&Vec3> for &Vec3 {
+    type Output = Vec3;
+
+    fn add(self, rhs: &Vec3) -> Self::Output {
+        let x = self.x() + rhs.x();
+        let y = self.y() + rhs.y();
+        let z = self.z() + rhs.z();
+
+        Vec3::new(x, y, z)
+    }
+}
+
 impl AddAssign for Vec3 {
     fn add_assign(&mut self, rhs: Self) {
         self.e[0] += rhs.x();
