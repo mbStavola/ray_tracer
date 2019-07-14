@@ -81,7 +81,7 @@ impl Vec3 {
     }
 }
 
-impl Add for Vec3 {
+impl Add for &Vec3 {
     type Output = Vec3;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -93,15 +93,19 @@ impl Add for Vec3 {
     }
 }
 
+impl Add for Vec3 {
+    type Output = Vec3;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        &self + &rhs
+    }
+}
+
 impl Add<Vec3> for &Vec3 {
     type Output = Vec3;
 
     fn add(self, rhs: Vec3) -> Self::Output {
-        let x = self.x() + rhs.x();
-        let y = self.y() + rhs.y();
-        let z = self.z() + rhs.z();
-
-        Vec3::new(x, y, z)
+        self + &rhs
     }
 }
 
@@ -109,19 +113,7 @@ impl Add<&Vec3> for Vec3 {
     type Output = Vec3;
 
     fn add(self, rhs: &Vec3) -> Self::Output {
-        rhs + self
-    }
-}
-
-impl Add<&Vec3> for &Vec3 {
-    type Output = Vec3;
-
-    fn add(self, rhs: &Vec3) -> Self::Output {
-        let x = self.x() + rhs.x();
-        let y = self.y() + rhs.y();
-        let z = self.z() + rhs.z();
-
-        Vec3::new(x, y, z)
+        &self + rhs
     }
 }
 
@@ -133,7 +125,7 @@ impl AddAssign for Vec3 {
     }
 }
 
-impl Mul for Vec3 {
+impl Mul for &Vec3 {
     type Output = Vec3;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -145,15 +137,27 @@ impl Mul for Vec3 {
     }
 }
 
-impl Mul<f64> for Vec3 {
+impl Mul for Vec3 {
     type Output = Vec3;
 
-    fn mul(self, rhs: f64) -> Self::Output {
-        let x = self.x() * rhs;
-        let y = self.y() * rhs;
-        let z = self.z() * rhs;
+    fn mul(self, rhs: Self) -> Self::Output {
+        &self * &rhs
+    }
+}
 
-        Vec3::new(x, y, z)
+impl Mul<&Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: &Vec3) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl Mul<Vec3> for &Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        self * &rhs
     }
 }
 
@@ -166,6 +170,14 @@ impl Mul<f64> for &Vec3 {
         let z = self.z() * rhs;
 
         Vec3::new(x, y, z)
+    }
+}
+
+impl Mul<f64> for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        rhs * &self
     }
 }
 
@@ -249,7 +261,7 @@ impl DivAssign<f64> for Vec3 {
     }
 }
 
-impl Sub for Vec3 {
+impl Sub for &Vec3 {
     type Output = Vec3;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -261,15 +273,27 @@ impl Sub for Vec3 {
     }
 }
 
-impl Sub for &Vec3 {
+impl Sub for Vec3 {
     type Output = Vec3;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        let x = self.x() - rhs.x();
-        let y = self.y() - rhs.y();
-        let z = self.z() - rhs.z();
+       &self - &rhs
+    }
+}
 
-        Vec3::new(x, y, z)
+impl Sub<Vec3> for &Vec3 {
+    type Output = Vec3;
+
+    fn sub(self, rhs: Vec3) -> Self::Output {
+        self - &rhs
+    }
+}
+
+impl Sub<&Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn sub(self, rhs: &Vec3) -> Self::Output {
+        &self - rhs
     }
 }
 

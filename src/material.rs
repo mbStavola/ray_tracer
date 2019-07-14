@@ -2,16 +2,16 @@ use crate::{hittable::Hit, random_in_unit_sphere, ray::Ray, vec3::Vec3};
 use rand::Rng;
 
 pub trait Material<T: Rng> {
-    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse>;
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>>;
 }
 
-pub struct ScatterResponse {
+pub struct ScatterResponse<'a> {
     scattered: Ray,
-    attenuation: Vec3,
+    attenuation: &'a Vec3,
 }
 
-impl ScatterResponse {
-    pub fn new(scattered: Ray, attenuation: Vec3) -> ScatterResponse {
+impl<'a> ScatterResponse<'a> {
+    pub fn new(scattered: Ray, attenuation: &'a Vec3) -> ScatterResponse<'a> {
         ScatterResponse {
             scattered,
             attenuation,
@@ -23,7 +23,7 @@ impl ScatterResponse {
     }
 
     pub fn attenuation(&self) -> &Vec3 {
-        &self.attenuation
+        self.attenuation
     }
 }
 
@@ -39,12 +39,10 @@ impl Lambertian {
 }
 
 impl<T: Rng> Material<T> for Lambertian {
-    fn scatter(&self, rng: &mut T, _ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
+    fn scatter(&self, rng: &mut T, _ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
         let target = hit.p() + hit.normal() + random_in_unit_sphere(rng);
-        let response = ScatterResponse {
-            scattered: Ray::new(hit.p().clone(), target - hit.p().clone()),
-            attenuation: self.albedo.clone(),
-        };
+        let scattered = Ray::new(hit.p().clone(), target - hit.p());
+        let response = ScatterResponse::new(scattered, &self.albedo);
         Some(response)
     }
 }
@@ -61,12 +59,12 @@ impl Metal {
 }
 
 impl<T: Rng> Material<T> for Metal {
-    fn scatter(&self, _rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
+    fn scatter(&self, _rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
         let reflected = reflect(&ray.direction().unit(), hit.normal());
         let scattered = Ray::new(hit.p().clone(), reflected);
 
         if scattered.direction().dot(hit.normal()) > 0.0 {
-            let response = ScatterResponse::new(scattered, self.albedo.clone());
+            let response = ScatterResponse::new(scattered, &self.albedo);
             Some(response)
         } else {
             None

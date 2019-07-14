@@ -14,8 +14,8 @@ use std::{f64, time::Instant};
 
 const OUTPUT_PATH: &str = "/home/mbs/workspace/rust/ray_tracer/resources/foo.ppm";
 
-const NX: usize = 1200;
-const NY: usize = 720;
+const NX: usize = 200;
+const NY: usize = 100;
 const NS: usize = 100;
 
 mod camera;
@@ -44,7 +44,7 @@ fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a Vec<Shape<'a, T>>, depth
         }
 
         if let Some(scatter) = hit.material().scatter(rng, ray, &hit) {
-            color(rng, scatter.scattered(), world, depth + 1) * scatter.attenuation().clone()
+            color(rng, scatter.scattered(), world, depth + 1) * scatter.attenuation()
         } else {
             Vec3::new(0.0, 0.0, 0.0)
         }
