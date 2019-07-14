@@ -1,12 +1,8 @@
-use crate::hittable::Hit;
-use crate::random_in_unit_sphere;
-use crate::ray::Ray;
-use crate::vec3::Vec3;
+use crate::{hittable::Hit, random_in_unit_sphere, ray::Ray, vec3::Vec3};
 use rand::Rng;
-use std::cell::{RefCell, RefMut};
 
-pub trait Material {
-    fn scatter(&self, ray: &Ray, hit: &Hit<'_>) -> Option<ScatterResponse>;
+pub trait Material<T: Rng> {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse>;
 }
 
 pub struct ScatterResponse {
@@ -42,9 +38,9 @@ impl Lambertian {
     }
 }
 
-impl Material for Lambertian {
-    fn scatter(&self, ray: &Ray, hit: &Hit<'_>) -> Option<ScatterResponse> {
-        let target = hit.p() + hit.normal() + random_in_unit_sphere();
+impl<T: Rng> Material<T> for Lambertian {
+    fn scatter(&self, rng: &mut T, _ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
+        let target = hit.p() + hit.normal() + random_in_unit_sphere(rng);
         let response = ScatterResponse {
             scattered: Ray::new(hit.p().clone(), target - hit.p().clone()),
             attenuation: self.albedo.clone(),
@@ -64,16 +60,13 @@ impl Metal {
     }
 }
 
-impl Material for Metal {
-    fn scatter(&self, ray: &Ray, hit: &Hit<'_>) -> Option<ScatterResponse> {
+impl<T: Rng> Material<T> for Metal {
+    fn scatter(&self, _rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
         let reflected = reflect(&ray.direction().unit(), hit.normal());
         let scattered = Ray::new(hit.p().clone(), reflected);
 
         if scattered.direction().dot(hit.normal()) > 0.0 {
-            let response = ScatterResponse {
-                scattered,
-                attenuation: self.albedo.clone(),
-            };
+            let response = ScatterResponse::new(scattered, self.albedo.clone());
             Some(response)
         } else {
             None

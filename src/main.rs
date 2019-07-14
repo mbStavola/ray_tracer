@@ -1,24 +1,21 @@
 #![deny(rust_2018_idioms)]
 
-use std::f64;
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 
-use rand::{Rng, SeedableRng};
-
-use crate::material::{Lambertian, Metal};
-use crate::util::drand48;
 use crate::{
     camera::Camera,
-    hittable::{Hittable, Shape, Sphere},
+    hittable::{Hittable, Shape},
+    material::{Lambertian, Metal},
     ray::Ray,
     util::DRand48,
     vec3::Vec3,
 };
-use std::cell::RefCell;
+use std::{f64, time::Instant};
 
 const OUTPUT_PATH: &str = "/home/mbs/workspace/rust/ray_tracer/resources/foo.ppm";
 
-const NX: usize = 200;
-const NY: usize = 100;
+const NX: usize = 1200;
+const NY: usize = 720;
 const NS: usize = 100;
 
 mod camera;
@@ -29,8 +26,9 @@ mod ray;
 mod util;
 mod vec3;
 
-fn random_in_unit_sphere() -> Vec3 {
-    let gen_p = || 2.0 * Vec3::new(drand48(), drand48(), drand48()) - Vec3::new(1.0, 1.0, 1.0);
+fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
+    let mut gen_p =
+        || 2.0 * Vec3::new(rng.gen48(), rng.gen48(), rng.gen48()) - Vec3::new(1.0, 1.0, 1.0);
 
     let mut p = gen_p();
     while p.square_length() >= 1.0 {
@@ -39,17 +37,14 @@ fn random_in_unit_sphere() -> Vec3 {
     p
 }
 
-fn color<'a>(ray: &Ray, world: &'a Vec<Shape<'a>>, depth: u8) -> Vec3 {
+fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a Vec<Shape<'a, T>>, depth: u8) -> Vec3 {
     if let Some(hit) = world.hit(ray, 0.001, f64::INFINITY) {
-        let target = hit.p() + hit.normal() + random_in_unit_sphere();
-        let bounce = Ray::new(hit.p().clone(), target - hit.p().clone());
-
         if depth > 50 {
-            return Vec3::new(0.0, 0.0, 0.0)
+            return Vec3::new(0.0, 0.0, 0.0);
         }
 
-        if let Some(scatter) = hit.material().scatter(ray, &hit) {
-            color(scatter.scattered(), world, depth + 1) * scatter.attenuation().clone()
+        if let Some(scatter) = hit.material().scatter(rng, ray, &hit) {
+            color(rng, scatter.scattered(), world, depth + 1) * scatter.attenuation().clone()
         } else {
             Vec3::new(0.0, 0.0, 0.0)
         }
@@ -62,6 +57,7 @@ fn color<'a>(ray: &Ray, world: &'a Vec<Shape<'a>>, depth: u8) -> Vec3 {
 }
 
 fn main() {
+    let mut rng = SmallRng::from_entropy();
     let camera = Camera::new();
 
     let material_a = Lambertian::new(Vec3::new(0.8, 0.3, 0.3));
@@ -76,18 +72,20 @@ fn main() {
     let material_d = Metal::new(Vec3::new(0.8, 0.8, 0.8));
     let sphere_d = Shape::sphere(-1.0, 0.0, -1.0, 0.5, &material_d);
 
-    let world: Vec<Shape<'_>> = vec![sphere_a, sphere_b, sphere_c, sphere_d];
+    let world = vec![sphere_a, sphere_b, sphere_c, sphere_d];
 
+    let tracing_start = Instant::now();
+    println!("Start tracing");
     let mut buffer = vec![];
     for j in (0..NY).into_iter().rev() {
         for i in 0..NX {
             let mut pixel = Vec3::default();
             for _ in 0..NS {
-                let u = (i as f64 + drand48()) / (NX as f64);
-                let v = (j as f64 + drand48()) / (NY as f64);
+                let u = (i as f64 + rng.gen48()) / (NX as f64);
+                let v = (j as f64 + rng.gen48()) / (NY as f64);
 
                 let ray = camera.ray(u, v);
-                pixel += color(&ray, &world, 0);
+                pixel += color(&mut rng, &ray, &world, 0);
             }
             pixel /= NS as f64;
             pixel = Vec3::new(pixel.r().sqrt(), pixel.g().sqrt(), pixel.b().sqrt());
@@ -98,6 +96,16 @@ fn main() {
             buffer.push(pixel.b() as u8);
         }
     }
+    println!(
+        "End tracing-- took {} seconds",
+        tracing_start.elapsed().as_secs()
+    );
 
+    let ppm_start = Instant::now();
+    println!("Start ppm creation");
     ppm::create(OUTPUT_PATH, NX, NY, &buffer);
+    println!(
+        "End ppm creation-- took {} seconds",
+        ppm_start.elapsed().as_secs()
+    );
 }

@@ -1,11 +1,4 @@
-use rand::{rngs::SmallRng, Rng, SeedableRng};
-
-pub fn drand48() -> f64 {
-    // TODO(Matt): It'd be nice to only have to instantiate this *once* but I'd need to figure out
-    // the issue of gen_range() requiring a mutable reference
-    let mut rng = SmallRng::from_entropy();
-    rng.gen48()
-}
+use rand::Rng;
 
 pub trait DRand48 {
     fn gen48(&mut self) -> f64;

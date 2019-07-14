@@ -109,7 +109,7 @@ impl Add<&Vec3> for Vec3 {
     type Output = Vec3;
 
     fn add(self, rhs: &Vec3) -> Self::Output {
-        self + rhs
+        rhs + self
     }
 }
 
