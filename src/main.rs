@@ -94,11 +94,14 @@ fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
 fn main() {
     let mut rng = SmallRng::from_entropy();
 
-    let look_from = Vec3::new(-2.0, 2.0, 1.0);
+    let look_from = Vec3::new(3.0, 3.0, 2.0);
     let look_at = Vec3::new(0.0, 0.0, -1.0);
     let v_up = Vec3::new(0.0, 1.0, 0.0);
 
-    let camera = Camera::new(look_from, look_at, v_up, 45.0, NX as f64 / NY as f64);
+    let focus_distance = (&look_from - &look_at).length();
+    let aperture = 2.0;
+
+    let camera = Camera::new(look_from, look_at, v_up, 20.0, NX as f64 / NY as f64, aperture, focus_distance);
 
     let world = static_world();
 
@@ -112,7 +115,7 @@ fn main() {
                 let u = (i as f64 + rng.gen48()) / (NX as f64);
                 let v = (j as f64 + rng.gen48()) / (NY as f64);
 
-                let ray = camera.ray(u, v);
+                let ray = camera.ray(&mut rng, u, v);
                 pixel += color(&mut rng, &ray, &world, 0);
             }
             pixel /= NS as f64;
