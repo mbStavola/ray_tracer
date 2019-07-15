@@ -1,16 +1,17 @@
 #![deny(rust_2018_idioms)]
 
-use rand::{rngs::SmallRng, Rng, SeedableRng};
+use std::{f64, time::Instant};
+
+use rand::{Rng, rngs::SmallRng, SeedableRng};
 
 use crate::{
     camera::Camera,
     hittable::{Hittable, Shape},
-    material::{Lambertian, Metal},
+    material::Material,
     ray::Ray,
     util::DRand48,
     vec3::Vec3,
 };
-use std::{f64, time::Instant};
 
 const OUTPUT_PATH: &str = "/home/mbs/workspace/rust/ray_tracer/resources/foo.ppm";
 
@@ -37,7 +38,7 @@ fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
     p
 }
 
-fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a Vec<Shape<'a, T>>, depth: u8) -> Vec3 {
+fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a Vec<Shape>, depth: u8) -> Vec3 {
     if let Some(hit) = world.hit(ray, 0.001, f64::INFINITY) {
         if depth > 50 {
             return Vec3::new(0.0, 0.0, 0.0);
@@ -56,23 +57,55 @@ fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a Vec<Shape<'a, T>>, depth
     }
 }
 
+fn static_world() -> Vec<Shape> {
+    let sphere_a = Shape::sphere(0.0, 0.0, -1.0, 0.5, Material::lambertian(0.8, 0.3, 0.3));
+    let sphere_b = Shape::sphere(0.0, -100.5, -1.0, 100.0, Material::lambertian(0.8, 0.8, 0.0));
+    let sphere_c = Shape::sphere(1.0, 0.0, -1.0, 0.5, Material::metal(0.8, 0.6, 0.2));
+    let sphere_d = Shape::sphere(-1.0, 0.0, -1.0, 0.5, Material::dielectric(1.5));
+    let sphere_e = Shape::sphere(-1.0, 0.0, -1.0, -0.45, Material::dielectric(1.5));
+
+    vec![sphere_a, sphere_b, sphere_c, sphere_d, sphere_e]
+}
+
+fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
+    let mut world = Vec::with_capacity(object_count + 1);
+
+
+    {
+        let ground_sphere = Shape::sphere(0.0, -1000.0, 0.0, 1000.0, Material::lambertian(0.5, 0.5, 0.5));
+        world.push(ground_sphere);
+    }
+
+    for a in -11..11 {
+        for b in -11..11 {
+            let material_choice = rng.gen48();
+            let material = if material_choice < 0.8 {
+                Material::lambertian(rng.gen48() * rng.gen48(), rng.gen48() * rng.gen48(), rng.gen48() * rng.gen48())
+            } else if material_choice < 0.95 {
+                Material::metal(0.5 * (1.0 + rng.gen48()), 0.5 * (1.0 + rng.gen48()), 0.5 * (1.0 + rng.gen48()))
+            } else {
+                Material::dielectric(1.5)
+            };
+
+            let sphere = Shape::sphere(
+                a as f64 + 0.9 * rng.gen48(),
+                0.2,
+                b as f64 + 0.9 * rng.gen48(),
+                0.2,
+                material
+            );
+            world.push(sphere);
+        }
+    }
+
+    world
+}
+
 fn main() {
     let mut rng = SmallRng::from_entropy();
-    let camera = Camera::new();
+    let camera = Camera::new(90.0, NX as f64 / NY as f64);
 
-    let material_a = Lambertian::new(Vec3::new(0.8, 0.3, 0.3));
-    let sphere_a = Shape::sphere(0.0, 0.0, -1.0, 0.5, &material_a);
-
-    let material_b = Lambertian::new(Vec3::new(0.8, 0.8, 0.0));
-    let sphere_b = Shape::sphere(0.0, -100.5, -1.0, 100.0, &material_b);
-
-    let material_c = Metal::new(Vec3::new(0.8, 0.6, 0.2));
-    let sphere_c = Shape::sphere(1.0, 0.0, -1.0, 0.5, &material_c);
-
-    let material_d = Metal::new(Vec3::new(0.8, 0.8, 0.8));
-    let sphere_d = Shape::sphere(-1.0, 0.0, -1.0, 0.5, &material_d);
-
-    let world = vec![sphere_a, sphere_b, sphere_c, sphere_d];
+    let world = static_world();
 
     let tracing_start = Instant::now();
     println!("Start tracing");
@@ -97,15 +130,15 @@ fn main() {
         }
     }
     println!(
-        "End tracing-- took {} seconds",
-        tracing_start.elapsed().as_secs()
+        "End tracing-- took {} ms",
+        tracing_start.elapsed().as_millis()
     );
 
     let ppm_start = Instant::now();
     println!("Start ppm creation");
     ppm::create(OUTPUT_PATH, NX, NY, &buffer);
     println!(
-        "End ppm creation-- took {} seconds",
-        ppm_start.elapsed().as_secs()
+        "End ppm creation-- took {} ms",
+        ppm_start.elapsed().as_millis()
     );
 }

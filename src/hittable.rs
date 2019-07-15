@@ -1,20 +1,33 @@
-use crate::material::Material;
-use crate::ray::Ray;
-use crate::vec3::Vec3;
 use rand::Rng;
 
+use crate::{
+    material::Scatterable,
+    ray::Ray,
+    vec3::Vec3,
+};
+use crate::material::Material;
+
 pub trait Hittable<'a, T: Rng> {
-    fn hit(&'a self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'a, T>>;
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>>;
 }
 
 pub struct Hit<'a, T: Rng> {
     t: f64,
     p: Vec3,
     normal: Vec3,
-    material: &'a dyn Material<T>,
+    material: &'a dyn Scatterable<T>,
 }
 
 impl<T: Rng> Hit<'_, T> {
+    pub fn new(t: f64, p: Vec3, normal: Vec3, material: &'_ dyn Scatterable<T>) -> Hit<'_, T> {
+        Hit {
+            t,
+            p,
+            normal,
+            material,
+        }
+    }
+
     pub fn t(&self) -> f64 {
         self.t
     }
@@ -27,19 +40,19 @@ impl<T: Rng> Hit<'_, T> {
         &self.normal
     }
 
-    pub fn material(&self) -> &'_ dyn Material<T> {
+    pub fn material(&self) -> &'_ dyn Scatterable<T> {
         self.material
     }
 }
 
-pub struct Sphere<'a, T: Rng> {
+pub struct Sphere {
     center: Vec3,
     radius: f64,
-    material: &'a dyn Material<T>,
+    material: Material
 }
 
-impl<'a, T: Rng> Sphere<'a, T> {
-    pub fn new(center: Vec3, radius: f64, material: &'a dyn Material<T>) -> Sphere<'a, T> {
+impl Sphere {
+    pub fn new(center: Vec3, radius: f64, material: Material) -> Sphere {
         Sphere {
             center,
             radius,
@@ -48,8 +61,8 @@ impl<'a, T: Rng> Sphere<'a, T> {
     }
 }
 
-impl<'a, T: Rng> Hittable<'a, T> for Sphere<'a, T> {
-    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'a, T>> {
+impl<'a, T: Rng> Hittable<'a, T> for Sphere {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
         let oc = ray.origin() - &self.center;
 
         let a = ray.direction().dot(ray.direction());
@@ -75,47 +88,42 @@ impl<'a, T: Rng> Hittable<'a, T> for Sphere<'a, T> {
 
         let p = ray.point_at(t);
         let normal = (&p - &self.center) / self.radius;
-        let material = self.material;
+        let material = &self.material;
 
-        let hit = Hit {
-            t,
-            p,
-            normal,
-            material,
-        };
+        let hit = Hit::new(t, p, normal, material);
 
         return Some(hit);
     }
 }
 
-pub enum Shape<'a, T: Rng> {
-    Sphere(Sphere<'a, T>),
+pub enum Shape {
+    Sphere(Sphere),
 }
 
-impl<'a, T: Rng> Shape<'a, T> {
+impl Shape {
     pub fn sphere(
         x: f64,
         y: f64,
         z: f64,
         radius: f64,
-        material: &'a dyn Material<T>,
-    ) -> Shape<'a, T> {
+        material: Material,
+    ) -> Shape {
         let center = Vec3::new(x, y, z);
-        let sphere: Sphere<'a, T> = Sphere::new(center, radius, material);
+        let sphere: Sphere = Sphere::new(center, radius, material);
         Shape::Sphere(sphere)
     }
 }
 
-impl<'a, T: Rng> Hittable<'a, T> for Shape<'a, T> {
-    fn hit(&'a self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'a, T>> {
+impl<'a, T: Rng> Hittable<'a, T> for Shape {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
         match self {
             Shape::Sphere(sphere) => sphere.hit(ray, t_min, t_max),
         }
     }
 }
 
-impl<'a, T: Rng> Hittable<'a, T> for Vec<Shape<'a, T>> {
-    fn hit(&'a self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'a, T>> {
+impl<'a, T: Rng> Hittable<'a, T> for Vec<Shape> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
         let mut min_distance = t_max;
         let mut nearest_hit = None;
 
