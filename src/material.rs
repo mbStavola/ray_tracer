@@ -1,10 +1,6 @@
-use crate::{
-    hittable::Hit,
-    ray::Ray,
-    vec3::Vec3,
-    util::DRand48
-};
 use rand::Rng;
+
+use crate::{hittable::Hit, ray::Ray, util::DRand48, vec3::Vec3};
 
 pub trait Scatterable<T: Rng> {
     fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>>;
@@ -77,19 +73,23 @@ impl<T: Rng> Scatterable<T> for Metal {
 
 pub struct Dielectric {
     ref_idx: f64,
-    attenuation: Vec3 // TODO(Matt): Figure out a way to include this in scatter instead
+    attenuation: Vec3, // TODO(Matt): Figure out a way to include this in scatter instead
 }
 
 impl Dielectric {
     pub fn new(ref_idx: f64) -> Dielectric {
-        Dielectric { ref_idx, attenuation: Vec3::new(1.0, 1.0, 1.0) }
+        Dielectric {
+            ref_idx,
+            attenuation: Vec3::new(1.0, 1.0, 1.0),
+        }
     }
 }
 
 impl<T: Rng> Scatterable<T> for Dielectric {
     fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
         let (outward_normal, ni_over_nt, cosine) = if ray.direction().dot(hit.normal()) > 0.0 {
-            let cosine = self.ref_idx * ray.direction().dot(hit.normal()) / ray.direction().length();
+            let cosine =
+                self.ref_idx * ray.direction().dot(hit.normal()) / ray.direction().length();
             (-hit.normal().clone(), self.ref_idx, cosine)
         } else {
             let cosine = -ray.direction().dot(hit.normal()) / ray.direction().length();
@@ -97,12 +97,13 @@ impl<T: Rng> Scatterable<T> for Dielectric {
         };
 
         let reflected = reflect(ray.direction(), hit.normal());
-        let (reflect_prob, r) = if let Some(ref refraction) = refract(ray.direction(), &outward_normal, ni_over_nt) {
-            let reflect_prob = schlick(cosine, self.ref_idx);
-            (reflect_prob, refraction.clone())
-        } else {
-            (1.0, reflected.clone())
-        };
+        let (reflect_prob, r) =
+            if let Some(ref refraction) = refract(ray.direction(), &outward_normal, ni_over_nt) {
+                let reflect_prob = schlick(cosine, self.ref_idx);
+                (reflect_prob, refraction.clone())
+            } else {
+                (1.0, reflected.clone())
+            };
 
         let refracted = if rng.gen48() < reflect_prob {
             Ray::new(hit.p().clone(), reflected)
@@ -119,7 +120,7 @@ impl<T: Rng> Scatterable<T> for Dielectric {
 pub enum Material {
     Lambertian(Lambertian),
     Dielectric(Dielectric),
-    Metal(Metal)
+    Metal(Metal),
 }
 
 impl Material {

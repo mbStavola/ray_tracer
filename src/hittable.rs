@@ -1,11 +1,7 @@
 use rand::Rng;
 
-use crate::{
-    material::Scatterable,
-    ray::Ray,
-    vec3::Vec3,
-};
 use crate::material::Material;
+use crate::{material::Scatterable, ray::Ray, vec3::Vec3};
 
 pub trait Hittable<'a, T: Rng> {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>>;
@@ -48,7 +44,7 @@ impl<T: Rng> Hit<'_, T> {
 pub struct Sphere {
     center: Vec3,
     radius: f64,
-    material: Material
+    material: Material,
 }
 
 impl Sphere {
@@ -101,13 +97,7 @@ pub enum Shape {
 }
 
 impl Shape {
-    pub fn sphere(
-        x: f64,
-        y: f64,
-        z: f64,
-        radius: f64,
-        material: Material,
-    ) -> Shape {
+    pub fn sphere(x: f64, y: f64, z: f64, radius: f64, material: Material) -> Shape {
         let center = Vec3::new(x, y, z);
         let sphere: Sphere = Sphere::new(center, radius, material);
         Shape::Sphere(sphere)

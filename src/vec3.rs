@@ -1,6 +1,6 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Vec3 {
     e: [f64; 3],
 }
@@ -277,7 +277,7 @@ impl Sub for Vec3 {
     type Output = Vec3;
 
     fn sub(self, rhs: Self) -> Self::Output {
-       &self - &rhs
+        &self - &rhs
     }
 }
 
