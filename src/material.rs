@@ -1,6 +1,5 @@
 use crate::{
     hittable::Hit,
-    random_in_unit_sphere,
     ray::Ray,
     vec3::Vec3,
     util::DRand48
@@ -150,6 +149,17 @@ impl<'a, T: Rng> Scatterable<T> for Material {
             Material::Metal(material) => material.scatter(rng, ray, hit),
         }
     }
+}
+
+fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
+    let mut gen_p =
+        || 2.0 * Vec3::new(rng.gen48(), rng.gen48(), rng.gen48()) - Vec3::new(1.0, 1.0, 1.0);
+
+    let mut p = gen_p();
+    while p.square_length() >= 1.0 {
+        p = gen_p();
+    }
+    p
 }
 
 fn reflect(a: &Vec3, b: &Vec3) -> Vec3 {

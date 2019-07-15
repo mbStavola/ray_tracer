@@ -12,6 +12,7 @@ use crate::{
     util::DRand48,
     vec3::Vec3,
 };
+use std::f64::consts::PI;
 
 const OUTPUT_PATH: &str = "/home/mbs/workspace/rust/ray_tracer/resources/foo.ppm";
 
@@ -26,17 +27,6 @@ mod ppm;
 mod ray;
 mod util;
 mod vec3;
-
-fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
-    let mut gen_p =
-        || 2.0 * Vec3::new(rng.gen48(), rng.gen48(), rng.gen48()) - Vec3::new(1.0, 1.0, 1.0);
-
-    let mut p = gen_p();
-    while p.square_length() >= 1.0 {
-        p = gen_p();
-    }
-    p
-}
 
 fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a Vec<Shape>, depth: u8) -> Vec3 {
     if let Some(hit) = world.hit(ray, 0.001, f64::INFINITY) {
@@ -103,7 +93,12 @@ fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
 
 fn main() {
     let mut rng = SmallRng::from_entropy();
-    let camera = Camera::new(90.0, NX as f64 / NY as f64);
+
+    let look_from = Vec3::new(-2.0, 2.0, 1.0);
+    let look_at = Vec3::new(0.0, 0.0, -1.0);
+    let v_up = Vec3::new(0.0, 1.0, 0.0);
+
+    let camera = Camera::new(look_from, look_at, v_up, 45.0, NX as f64 / NY as f64);
 
     let world = static_world();
 
