@@ -49,18 +49,23 @@ impl<T: Rng> Scatterable<T> for Lambertian {
 
 pub struct Metal {
     albedo: Vec3,
+    fuzziness: f64,
 }
 
 impl Metal {
-    pub fn new(albedo: Vec3) -> Metal {
-        Metal { albedo }
+    pub fn new(albedo: Vec3, fuzziness: f64) -> Metal {
+        let fuzziness = fuzziness.min(1.0);
+        Metal { albedo, fuzziness }
     }
 }
 
 impl<T: Rng> Scatterable<T> for Metal {
-    fn scatter(&self, _rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
         let reflected = reflect(&ray.direction().unit(), hit.normal());
-        let scattered = Ray::new(hit.p().clone(), reflected);
+        let scattered = Ray::new(
+            hit.p().clone(),
+            reflected + self.fuzziness * random_in_unit_sphere(rng),
+        );
 
         if scattered.direction().dot(hit.normal()) > 0.0 {
             let response = ScatterResponse::new(scattered, &self.albedo);
@@ -130,9 +135,9 @@ impl Material {
         Material::Lambertian(material)
     }
 
-    pub fn metal(e0: f64, e1: f64, e2: f64) -> Material {
+    pub fn metal(e0: f64, e1: f64, e2: f64, fuzziness: f64) -> Material {
         let albedo = Vec3::new(e0, e1, e2);
-        let material = Metal::new(albedo);
+        let material = Metal::new(albedo, fuzziness);
         Material::Metal(material)
     }
 
