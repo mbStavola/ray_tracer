@@ -1,0 +1,4 @@
+screen_width = 480
+screen_height = 240
+antialias_iterations = 100
+dynamic_world = true

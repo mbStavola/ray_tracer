@@ -5,8 +5,11 @@ authors = ["Matt Stavola <mstavola9@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+toml = "0.5.1"
 rayon = "1.1.0"
 itertools = "0.8"
+serde = "1.0.98"
+serde_derive = "1.0.98"
 
 [dependencies.rand]
 version = "0.7.0"

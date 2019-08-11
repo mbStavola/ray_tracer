@@ -88,7 +88,7 @@ impl<'a, T: Rng> Hittable<'a, T> for Sphere {
 
         let hit = Hit::new(t, p, normal, material);
 
-        return Some(hit);
+        Some(hit)
     }
 }
 
@@ -112,18 +112,18 @@ impl<'a, T: Rng> Hittable<'a, T> for Shape {
     }
 }
 
-impl<'a, T: Rng> Hittable<'a, T> for Vec<Shape> {
+impl<'a, T: Rng> Hittable<'a, T> for &[Shape] {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
         let mut min_distance = t_max;
         let mut nearest_hit = None;
 
-        for hittable in self {
+        for hittable in self.iter() {
             if let Some(hit) = hittable.hit(ray, t_min, min_distance) {
                 min_distance = hit.t();
                 nearest_hit = Some(hit);
             }
         }
 
-        return nearest_hit;
+        nearest_hit
     }
 }
