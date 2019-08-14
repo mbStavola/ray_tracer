@@ -62,7 +62,7 @@ fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
 
             let sphere = Shape::sphere(
                 f64::from(a) + 0.9 * rng.gen48(),
-                0.15,
+                0.2,
                 f64::from(b) + 0.9 * rng.gen48(),
                 0.2,
                 material,
