@@ -1,3 +1,7 @@
+use core::fmt;
+use serde::de::{self, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Clone, Debug, Default)]
@@ -78,6 +82,51 @@ impl Vec3 {
         let z = self.x() * other.y() - self.y() * other.x();
 
         Vec3::new(x, y, z)
+    }
+}
+
+impl<'de> Deserialize<'de> for Vec3 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        const FIELDS: &[&str] = &["x", "y", "z"];
+
+        struct VecVisitor;
+
+        impl<'de> Visitor<'de> for VecVisitor {
+            type Value = Vec3;
+
+            fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
+                formatter.write_str("struct Vec3")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Vec3, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut x: Option<f64> = None;
+                let mut y: Option<f64> = None;
+                let mut z: Option<f64> = None;
+
+                while let Some((key, value)) = map.next_entry()? {
+                    match key {
+                        "x" => x = Some(value),
+                        "y" => y = Some(value),
+                        "z" => z = Some(value),
+                        _ => return Err(de::Error::unknown_field(key, FIELDS)),
+                    }
+                }
+
+                let x = x.ok_or_else(|| de::Error::missing_field("x"))?;
+                let y = y.ok_or_else(|| de::Error::missing_field("y"))?;
+                let z = z.ok_or_else(|| de::Error::missing_field("z"))?;
+
+                Ok(Vec3::new(x, y, z))
+            }
+        }
+
+        deserializer.deserialize_struct("Vec3", FIELDS, VecVisitor)
     }
 }
 

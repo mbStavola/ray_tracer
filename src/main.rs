@@ -23,27 +23,27 @@ fn main() {
     let tracer_config = {
         let config_path = env::var("TRACER_CONFIG_PATH")
             .unwrap_or_else(|_| "./resources/tracer.toml".to_string());
-        read_tracer_config(config_path)
+        dbg!(read_tracer_config(config_path))
     };
 
-    let screen_width = tracer_config.screen_width().unwrap_or_else(|| 200);
-    let screen_height = tracer_config.screen_height().unwrap_or_else(|| 100);
+    let screen_width = tracer_config.renderer_config().screen_width();
+    let screen_height = tracer_config.renderer_config().screen_height();
 
     let camera = {
-        let look_from = Vec3::new(20.0, 3.0, -6.0);
-        let look_at = Vec3::new(0.0, 0.0, 0.0);
+        let camera_config = tracer_config.camera_config();
+        let look_from = camera_config.look_from().clone();
+        let look_at = camera_config.look_at().clone();
         let v_up = Vec3::new(0.0, 1.0, 0.0);
 
         let focus_distance = (&look_from - &look_at).length();
-        let aperture = 0.2;
 
         Camera::new(
             look_from,
             look_at,
             v_up,
-            15.0,
+            camera_config.fov(),
             screen_width as f64 / screen_height as f64,
-            aperture,
+            camera_config.aperture(),
             focus_distance,
         )
     };
@@ -51,14 +51,14 @@ fn main() {
     let world = {
         let mut rng = SmallRng::from_entropy();
 
-        let is_dynamic = tracer_config.dynamic_world();
+        let is_dynamic = tracer_config.world_config().is_dyanmic();
         gen_world(&mut rng, is_dynamic)
     };
 
     let tracing_start = Instant::now();
     println!("Start tracing");
 
-    let antialias_iterations = tracer_config.antialias_iterations().unwrap_or_else(|| 100);
+    let antialias_iterations = tracer_config.renderer_config().antialias_iterations();
     let buffer: Vec<u8> = render(
         &world,
         &camera,
@@ -75,12 +75,8 @@ fn main() {
     let ppm_start = Instant::now();
     println!("Start ppm creation");
 
-    let output_path = tracer_config
-        .output_path()
-        .cloned()
-        .unwrap_or_else(|| "./resources/output.ppm".to_string());
+    let output_path = tracer_config.output_config().output_path();
     ppm::create(output_path, screen_width, screen_height, &buffer);
-
     println!(
         "End ppm creation-- took {} ms",
         ppm_start.elapsed().as_millis()

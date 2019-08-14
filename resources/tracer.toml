@@ -1,4 +1,15 @@
-screen_width = 480
-screen_height = 240
+[output]
+type = "ppm"
+
+[renderer]
+screen_width = 1280
+screen_height = 720
 antialias_iterations = 100
-dynamic_world = true
+
+[world]
+is_dynamic = false
+
+[camera]
+fov = 15.0
+look_from = { x = 20.0, y = 3.0, z = -6.0 }
+look_at = { x = 0.0, y = 0.0, z = 0.0 }
