@@ -79,7 +79,7 @@ fn main() {
 
     let antialias_iterations = tracer_config.renderer_config().antialias_iterations();
     let render_parallel = tracer_config.renderer_config().render_parallel();
-    let bounding_volume = tracer_config.world_config().bounding_volume();
+    let use_bounding_volume = tracer_config.renderer_config().use_bounding_volume();
     let buffer: Vec<u8> = render_world(
         &world,
         &camera,
@@ -87,7 +87,7 @@ fn main() {
         screen_height,
         antialias_iterations,
         render_parallel,
-        bounding_volume,
+        use_bounding_volume,
     );
 
     println!(

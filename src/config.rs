@@ -113,6 +113,8 @@ pub struct RendererConfig {
     antialias_iterations: usize,
     #[serde(default)]
     render_parallel: bool,
+    #[serde(default)]
+    use_bounding_volume: bool,
 }
 
 impl RendererConfig {
@@ -145,6 +147,10 @@ impl RendererConfig {
 
     pub fn render_parallel(&self) -> bool {
         self.render_parallel
+    }
+
+    pub fn use_bounding_volume(&self) -> bool {
+        self.use_bounding_volume
     }
 }
 
@@ -179,9 +185,6 @@ pub struct WorldConfig {
     #[serde(default)]
     is_dynamic: bool,
 
-    #[serde(default)]
-    bounding_volume: bool,
-
     #[serde(WorldConfig::default_max_objects)]
     max_objects: usize,
 }
@@ -194,10 +197,6 @@ impl WorldConfig {
 
     pub fn is_dyanmic(&self) -> bool {
         self.is_dynamic
-    }
-
-    pub fn bounding_volume(&self) -> bool {
-        self.bounding_volume
     }
 
     pub fn max_objects(&self) -> usize {

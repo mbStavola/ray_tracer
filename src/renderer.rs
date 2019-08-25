@@ -7,23 +7,23 @@ use crate::{
 };
 
 pub fn render_world<'a>(
-    world: &BoundingVolumeHierarchy,
+    world: &'a BoundingVolumeHierarchy,
     camera: &Camera,
     screen_width: usize,
     screen_height: usize,
     antialias_iterations: usize,
-    run_parallel: bool,
-    bounding_volume: bool,
+    render_parallel: bool,
+    use_bounding_volume: bool,
 ) -> Vec<u8> {
     let screen = 0..(screen_width * screen_height);
 
-    //    let world: &dyn Hittable<'a, _> = if bounding_volume {
-    //        world
-    //    } else {
-    //        &world.shapes()[..]
-    //    };
+    let world: &dyn Hittable<'a, _> = if use_bounding_volume {
+        world
+    } else {
+        world.shapes()
+    };
 
-    if run_parallel {
+    if render_parallel {
         screen
             .into_par_iter()
             .map_init(SmallRng::from_entropy, |rng, idx| {

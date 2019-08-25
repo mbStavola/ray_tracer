@@ -4,7 +4,7 @@ use crate::aabb::AABB;
 use crate::material::Material;
 use crate::{material::Scatterable, ray::Ray, vec3::Vec3};
 
-pub trait Hittable<'a, T: Rng> {
+pub trait Hittable<'a, T: Rng>: Sync {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit<'_, T>>;
     fn bounding_box(&self, time_start: f32, time_end: f32) -> Option<AABB>;
 }
@@ -190,6 +190,17 @@ impl<'a, T: Rng> Hittable<'a, T> for Shape {
                 sphere.bounding_box(time_start, time_end)
             }
         }
+    }
+}
+
+impl<'a, T: Rng> Hittable<'a, T> for Vec<Shape> {
+    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit<'_, T>> {
+        let shapes = &self[..];
+        hit(shapes, ray, t_min, t_max)
+    }
+
+    fn bounding_box(&self, time_start: f32, time_end: f32) -> Option<AABB> {
+        bounding_box::<T>(self, time_start, time_end)
     }
 }
 
