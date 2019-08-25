@@ -6,15 +6,22 @@ use crate::{
     vec3::Vec3,
 };
 
-pub fn render_world(
-    world: &BoundingVolumeHierarchy,
+pub fn render_world<'a>(
+    world: &'a BoundingVolumeHierarchy,
     camera: &Camera,
     screen_width: usize,
     screen_height: usize,
     antialias_iterations: usize,
     render_parallel: bool,
+    use_bounding_volume: bool,
 ) -> Vec<u8> {
     let screen = 0..(screen_width * screen_height);
+
+    let world: &'a dyn Hittable<'a, _> = if use_bounding_volume {
+        world
+    } else {
+        world.shapes()
+    };
 
     if render_parallel {
         screen
@@ -52,9 +59,9 @@ pub fn render_world(
 }
 
 #[inline(always)]
-fn render<T: Rng>(
+fn render<'a, T: Rng>(
     rng: &mut T,
-    world: &BoundingVolumeHierarchy,
+    world: &'a dyn Hittable<'a, T>,
     camera: &Camera,
     screen_width: usize,
     screen_height: usize,
@@ -79,7 +86,7 @@ fn render<T: Rng>(
     pixel
 }
 
-fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &BoundingVolumeHierarchy, depth: u8) -> Vec3 {
+fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a dyn Hittable<'a, T>, depth: u8) -> Vec3 {
     if let Some(hit) = world.hit(ray, 0.001, std::f32::INFINITY) {
         if depth > 50 {
             return Vec3::new(0.0, 0.0, 0.0);

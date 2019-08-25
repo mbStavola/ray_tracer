@@ -6,6 +6,7 @@ screen_width = 1280
 screen_height = 720
 antialias_iterations = 100
 render_parallel = true
+use_bounding_volume = true
 
 [world]
 max_objects = 10

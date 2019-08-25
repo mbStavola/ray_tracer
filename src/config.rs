@@ -113,6 +113,8 @@ pub struct RendererConfig {
     antialias_iterations: usize,
     #[serde(default)]
     render_parallel: bool,
+    #[serde(default)]
+    use_bounding_volume: bool,
 }
 
 impl RendererConfig {
@@ -145,6 +147,10 @@ impl RendererConfig {
 
     pub fn render_parallel(&self) -> bool {
         self.render_parallel
+    }
+
+    pub fn use_bounding_volume(&self) -> bool {
+        self.use_bounding_volume
     }
 }
 
