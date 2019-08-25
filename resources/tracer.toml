@@ -10,7 +10,7 @@ use_bounding_volume = true
 
 [world]
 max_objects = 10
-is_dynamic = false
+is_dynamic = true
 
 [camera]
 aperture = 0.0

@@ -1,18 +1,19 @@
 use rand::Rng;
 
+use crate::texture::{Texturable, Texture};
 use crate::{hittable::Hit, ray::Ray, util::DRand48, vec3::Vec3};
 
 pub trait Scatterable<T: Rng> {
-    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>>;
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse>;
 }
 
-pub struct ScatterResponse<'a> {
+pub struct ScatterResponse {
     scattered: Ray,
-    attenuation: &'a Vec3,
+    attenuation: Vec3,
 }
 
-impl<'a> ScatterResponse<'a> {
-    pub fn new(scattered: Ray, attenuation: &'a Vec3) -> ScatterResponse<'a> {
+impl ScatterResponse {
+    pub fn new(scattered: Ray, attenuation: Vec3) -> ScatterResponse {
         ScatterResponse {
             scattered,
             attenuation,
@@ -24,26 +25,27 @@ impl<'a> ScatterResponse<'a> {
     }
 
     pub fn attenuation(&self) -> &Vec3 {
-        self.attenuation
+        &self.attenuation
     }
 }
 
 #[derive(Debug)]
 pub struct Lambertian {
-    albedo: Vec3,
+    albedo: Texture,
 }
 
-impl Lambertian {
-    pub fn new(albedo: Vec3) -> Lambertian {
+impl<'a> Lambertian {
+    pub fn new(albedo: Texture) -> Lambertian {
         Lambertian { albedo }
     }
 }
 
-impl<T: Rng> Scatterable<T> for Lambertian {
-    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
+impl<'a, T: Rng> Scatterable<T> for Lambertian {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
         let target = hit.p() + hit.normal() + random_in_unit_sphere(rng);
         let scattered = Ray::new(hit.p().clone(), target - hit.p(), ray.time());
-        let response = ScatterResponse::new(scattered, &self.albedo);
+        let attenuation = self.albedo.value(0.0, 0.0, hit.p());
+        let response = ScatterResponse::new(scattered, attenuation);
         Some(response)
     }
 }
@@ -62,7 +64,7 @@ impl Metal {
 }
 
 impl<T: Rng> Scatterable<T> for Metal {
-    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
         let reflected = reflect(&ray.direction().unit(), hit.normal());
         let scattered = Ray::new(
             hit.p().clone(),
@@ -71,7 +73,8 @@ impl<T: Rng> Scatterable<T> for Metal {
         );
 
         if scattered.direction().dot(hit.normal()) > 0.0 {
-            let response = ScatterResponse::new(scattered, &self.albedo);
+            let attenuation = self.albedo.clone();
+            let response = ScatterResponse::new(scattered, attenuation);
             Some(response)
         } else {
             None
@@ -82,20 +85,16 @@ impl<T: Rng> Scatterable<T> for Metal {
 #[derive(Debug)]
 pub struct Dielectric {
     ref_idx: f32,
-    attenuation: Vec3, // TODO(Matt): Figure out a way to include this in scatter instead
 }
 
 impl Dielectric {
     pub fn new(ref_idx: f32) -> Dielectric {
-        Dielectric {
-            ref_idx,
-            attenuation: Vec3::new(1.0, 1.0, 1.0),
-        }
+        Dielectric { ref_idx }
     }
 }
 
 impl<T: Rng> Scatterable<T> for Dielectric {
-    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
         let (outward_normal, ni_over_nt, cosine) = if ray.direction().dot(hit.normal()) > 0.0 {
             let cosine =
                 self.ref_idx * ray.direction().dot(hit.normal()) / ray.direction().length();
@@ -120,7 +119,8 @@ impl<T: Rng> Scatterable<T> for Dielectric {
             Ray::new(hit.p().clone(), r.clone(), ray.time())
         };
 
-        let scatter = ScatterResponse::new(refracted, &self.attenuation);
+        let attenuation = Vec3::new(1.0, 1.0, 1.0);
+        let scatter = ScatterResponse::new(refracted, attenuation);
 
         Some(scatter)
     }
@@ -134,9 +134,14 @@ pub enum Material {
 }
 
 impl Material {
-    pub fn lambertian(e0: f32, e1: f32, e2: f32) -> Material {
-        let albedo = Vec3::new(e0, e1, e2);
+    pub fn lambertian(r: f32, g: f32, b: f32) -> Material {
+        let albedo = Texture::constant(r, g, b);
         let material = Lambertian::new(albedo);
+        Material::Lambertian(material)
+    }
+
+    pub fn textured(texture: Texture) -> Material {
+        let material = Lambertian::new(texture);
         Material::Lambertian(material)
     }
 
@@ -153,7 +158,7 @@ impl Material {
 }
 
 impl<'a, T: Rng> Scatterable<T> for Material {
-    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
         match self {
             Material::Lambertian(material) => material.scatter(rng, ray, hit),
             Material::Dielectric(material) => material.scatter(rng, ray, hit),

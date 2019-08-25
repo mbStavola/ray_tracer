@@ -18,6 +18,7 @@ mod material;
 mod ppm;
 mod ray;
 mod renderer;
+mod texture;
 mod util;
 mod vec3;
 mod world;

@@ -3,6 +3,7 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 
 use crate::bvh::BoundingVolumeHierarchy;
+use crate::texture::Texture;
 use crate::{hittable::Shape, material::Material, util::DRand48};
 
 fn static_world() -> Vec<Shape> {
@@ -68,12 +69,13 @@ fn random_world<T: Rng>(rng: &mut T, max_objects: usize) -> Vec<Shape> {
     let mut world = Vec::with_capacity(max_objects);
 
     {
+        let checker_pattern = Texture::checker_color(0.2, 0.3, 0.1, 0.9, 0.9, 0.9);
         let ground_sphere = Shape::sphere(
             0.0,
             -1000.0,
             0.0,
             1000.0,
-            Material::lambertian(0.5, 0.5, 0.5),
+            Material::textured(checker_pattern),
         );
 
         let glass_sphere = Shape::sphere(0.0, 1.0, 0.0, 1.0, Material::dielectric(1.5));
