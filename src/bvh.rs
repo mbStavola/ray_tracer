@@ -103,10 +103,6 @@ impl BVHMember {
         time_initial: f32,
         time_final: f32,
     ) -> BVHMember {
-        println!(
-            "Tree Level (n: {:?}, offset: {:?})-- {:?}",
-            n, offset, &shapes
-        );
         let axis = (3.0 * rng.gen48()) as usize;
         shapes.sort_by(|a, b| {
             let a: &dyn Hittable<'_, T> = a;
