@@ -29,15 +29,21 @@ impl AABB {
             let max_component = self.max[component_index];
 
             let origin_component = ray.origin()[component_index];
-            let direction_component = ray.direction()[component_index];
+            let direction_component = 1.0 / ray.direction()[component_index];
 
-            let t0 = min_component - origin_component / direction_component;
-            let t1 = max_component - origin_component / direction_component;
+            let mut t0 = (min_component - origin_component) * direction_component;
+            let mut t1 = (max_component - origin_component) * direction_component;
+
+            if direction_component < 0.0 {
+                let tmp = t0;
+                t0 = t1;
+                t1 = tmp;
+            }
 
             min_t = t0.max(min_t);
             max_t = t1.min(max_t);
 
-            if t_max <= t_min {
+            if max_t <= min_t {
                 return false;
             }
         }
