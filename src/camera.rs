@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 
 use rand::Rng;
 
@@ -12,7 +12,9 @@ pub struct Camera {
     u: Vec3,
     v: Vec3,
     w: Vec3,
-    lens_radius: f64,
+    lens_radius: f32,
+    time_start: f32,
+    time_end: f32,
 }
 
 impl Camera {
@@ -20,10 +22,12 @@ impl Camera {
         look_from: Vec3,
         look_at: Vec3,
         v_up: Vec3,
-        vertical_fov: f64,
-        aspect: f64,
-        aperture: f64,
-        focus_distance: f64,
+        vertical_fov: f32,
+        aspect: f32,
+        aperture: f32,
+        focus_distance: f32,
+        time_start: f32,
+        time_end: f32,
     ) -> Camera {
         let lens_radius = aperture / 2.0;
 
@@ -53,16 +57,20 @@ impl Camera {
             v,
             w,
             lens_radius,
+            time_start,
+            time_end,
         }
     }
 
-    pub fn ray<T: Rng>(&self, rng: &mut T, s: f64, t: f64) -> Ray {
+    pub fn ray<T: Rng>(&self, rng: &mut T, s: f32, t: f32) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk(rng);
         let offset = &self.u * rd.x() + &self.v * rd.y();
         let direction = &self.lower_left_corner + s * &self.horizontal + t * &self.vertical
             - &self.origin
             - &offset;
-        Ray::new(&self.origin + offset, direction)
+
+        let time = self.time_start + (rng.gen48() as f32) * (self.time_end - self.time_start);
+        Ray::new(&self.origin + offset, direction, time)
     }
 }
 

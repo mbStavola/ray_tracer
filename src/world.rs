@@ -1,5 +1,9 @@
-use crate::{hittable::Shape, material::Material, util::DRand48};
+use itertools::Itertools;
+use rand::seq::SliceRandom;
 use rand::Rng;
+
+use crate::bvh::BoundingVolumeHierarchy;
+use crate::{hittable::Shape, material::Material, util::DRand48};
 
 fn static_world() -> Vec<Shape> {
     let sphere_a = Shape::sphere(0.0, 0.0, -1.0, 0.5, Material::lambertian(0.8, 0.3, 0.3));
@@ -14,11 +18,54 @@ fn static_world() -> Vec<Shape> {
     let sphere_d = Shape::sphere(-1.0, 0.0, -1.0, 0.5, Material::dielectric(1.5));
     let sphere_e = Shape::sphere(-1.0, 0.0, -1.0, -0.45, Material::dielectric(1.5));
 
-    vec![sphere_a, sphere_b, sphere_c, sphere_d, sphere_e]
+    let mut spheres = vec![sphere_a, sphere_b, sphere_c, sphere_d, sphere_e];
+
+    for i in 0..3 {
+        let i = i as f32;
+        let x = 1.5 + (i * 0.2);
+        let z = -1.5 + (i * 0.2);
+
+        let material = Material::lambertian(i * 0.5, i * 0.5, i * 0.5);
+        let sphere = Shape::sphere(x, 0.0, z, 0.2, material);
+        spheres.push(sphere);
+    }
+
+    for i in 0..2 {
+        let i = i as f32;
+        let x = 1.1 + (i * 0.4) + i;
+        let z = -1.3 - (i * 0.3) + i;
+
+        let material = Material::lambertian(i * 0.5, i * 0.5, i * 0.5);
+        let sphere = Shape::moving_sphere(x, 0.0, z, x, 0.7, z, 0.2, material, 0.0, 1.0);
+        spheres.push(sphere);
+    }
+
+    for i in 0..3 {
+        let i = i as f32;
+        let x = 1.2 - (i * 0.8) + i;
+        let z = -1.6 + (i * 0.1) + i;
+
+        let material = Material::metal(0.8, 0.6, 0.2, 0.0);
+        let sphere = Shape::sphere(x, 0.0, z, 0.2, material);
+        spheres.push(sphere);
+    }
+
+    for i in 0..2 {
+        let i = i as f32;
+        let x = 1.4 + (i * 0.2) + i;
+        let z = -1.2 + (i * 0.6) + i;
+
+        let material = Material::dielectric(1.5);
+        let sphere = Shape::sphere(x, 0.0, z, 0.2, material);
+        spheres.push(sphere);
+    }
+
+    spheres
 }
 
-fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
-    let mut world = Vec::with_capacity(object_count + 4);
+fn random_world<T: Rng>(rng: &mut T, max_objects: usize) -> Vec<Shape> {
+    let max_objects = max_objects + 4;
+    let mut world = Vec::with_capacity(max_objects);
 
     {
         let ground_sphere = Shape::sphere(
@@ -40,8 +87,18 @@ fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
         world.push(metal_sphere);
     }
 
-    for a in -11..11 {
-        for b in -11..11 {
+    let mut outer_range = (-11..11).collect_vec();
+    outer_range.shuffle(rng);
+
+    for a in outer_range.into_iter() {
+        let mut inner_range = (-11..11).collect_vec();
+        inner_range.shuffle(rng);
+
+        for b in inner_range.into_iter() {
+            if world.len() == max_objects {
+                break;
+            }
+
             let material_choice = rng.gen48();
             let material = if material_choice < 0.8 {
                 Material::lambertian(
@@ -60,13 +117,33 @@ fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
                 Material::dielectric(1.5)
             };
 
-            let sphere = Shape::sphere(
-                f64::from(a) + 0.9 * rng.gen48(),
-                0.2,
-                f64::from(b) + 0.9 * rng.gen48(),
-                0.2,
-                material,
-            );
+            let is_moving = rng.gen48() < 0.40;
+            let sphere = if material_choice < 0.8 && is_moving {
+                let x = (a as f32) + 0.9 * rng.gen48();
+                let z = (b as f32) + 0.9 * rng.gen48();
+
+                Shape::moving_sphere(
+                    x,
+                    0.2,
+                    z,
+                    x,
+                    0.2 + (0.5 * rng.gen48()),
+                    z,
+                    0.2,
+                    material,
+                    0.0,
+                    1.0,
+                )
+            } else {
+                Shape::sphere(
+                    (a as f32) + 0.9 * rng.gen48(),
+                    0.2,
+                    (b as f32) + 0.9 * rng.gen48(),
+                    0.2,
+                    material,
+                )
+            };
+
             world.push(sphere);
         }
     }
@@ -74,10 +151,18 @@ fn random_world<T: Rng>(rng: &mut T, object_count: usize) -> Vec<Shape> {
     world
 }
 
-pub fn gen_world<T: Rng>(rng: &mut T, is_dynamic: bool) -> Vec<Shape> {
-    if is_dynamic {
-        random_world(rng, 1)
+pub fn gen_world<T: Rng>(
+    rng: &mut T,
+    is_dynamic: bool,
+    max_objects: usize,
+    time_initial: f32,
+    time_final: f32,
+) -> BoundingVolumeHierarchy {
+    let world = if is_dynamic {
+        random_world(rng, max_objects)
     } else {
         static_world()
-    }
+    };
+
+    BoundingVolumeHierarchy::new(rng, world, time_initial, time_final)
 }

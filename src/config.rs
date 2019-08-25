@@ -34,37 +34,55 @@ impl TracerConfig {
 #[derive(Debug, Default, Deserialize)]
 pub struct CameraConfig {
     #[serde(default = "CameraConfig::default_fov")]
-    fov: f64,
+    fov: f32,
     #[serde(default = "CameraConfig::default_aperture")]
-    aperture: f64,
+    aperture: f32,
     #[serde(default = "CameraConfig::default_look_from")]
     look_from: Vec3,
     #[serde(default = "CameraConfig::default_look_at")]
     look_at: Vec3,
+    #[serde(default = "CameraConfig::default_time_start")]
+    time_start: f32,
+    #[serde(default = "CameraConfig::default_time_end")]
+    time_end: f32,
 }
 
 impl CameraConfig {
-    fn default_fov() -> f64 {
+    #[allow(dead_code)]
+    fn default_fov() -> f32 {
         15.0
     }
 
-    fn default_aperture() -> f64 {
+    #[allow(dead_code)]
+    fn default_aperture() -> f32 {
         0.2
     }
 
+    #[allow(dead_code)]
     fn default_look_from() -> Vec3 {
         Vec3::default()
     }
 
+    #[allow(dead_code)]
     fn default_look_at() -> Vec3 {
         Vec3::default()
     }
 
-    pub fn fov(&self) -> f64 {
+    #[allow(dead_code)]
+    fn default_time_start() -> f32 {
+        0.0
+    }
+
+    #[allow(dead_code)]
+    fn default_time_end() -> f32 {
+        1.0
+    }
+
+    pub fn fov(&self) -> f32 {
         self.fov
     }
 
-    pub fn aperture(&self) -> f64 {
+    pub fn aperture(&self) -> f32 {
         self.aperture
     }
 
@@ -74,6 +92,14 @@ impl CameraConfig {
 
     pub fn look_at(&self) -> &Vec3 {
         &self.look_at
+    }
+
+    pub fn time_start(&self) -> f32 {
+        self.time_start
+    }
+
+    pub fn time_end(&self) -> f32 {
+        self.time_end
     }
 }
 
@@ -85,17 +111,22 @@ pub struct RendererConfig {
     screen_height: usize,
     #[serde(default = "RendererConfig::default_antialias_iterations")]
     antialias_iterations: usize,
+    #[serde(default)]
+    render_parallel: bool,
 }
 
 impl RendererConfig {
+    #[allow(dead_code)]
     fn default_screen_width() -> usize {
         200
     }
 
+    #[allow(dead_code)]
     fn default_screen_height() -> usize {
         100
     }
 
+    #[allow(dead_code)]
     fn default_antialias_iterations() -> usize {
         100
     }
@@ -111,15 +142,29 @@ impl RendererConfig {
     pub fn antialias_iterations(&self) -> usize {
         self.antialias_iterations
     }
+
+    pub fn render_parallel(&self) -> bool {
+        self.render_parallel
+    }
 }
 
 #[derive(Debug, Default, Deserialize)]
 pub struct OutputConfig {
     #[serde(default = "OutputConfig::default_output_path")]
     output_path: String,
+
+    #[serde(default)]
+    file_name: String,
+
+    #[serde(default)]
+    file_type: String,
+
+    #[serde(default)]
+    render_window: bool,
 }
 
 impl OutputConfig {
+    #[allow(dead_code)]
     fn default_output_path() -> String {
         "./resources/output.ppm".to_string()
     }
@@ -133,11 +178,30 @@ impl OutputConfig {
 pub struct WorldConfig {
     #[serde(default)]
     is_dynamic: bool,
+
+    #[serde(default)]
+    bounding_volume: bool,
+
+    #[serde(WorldConfig::default_max_objects)]
+    max_objects: usize,
 }
 
 impl WorldConfig {
+    #[allow(dead_code)]
+    fn default_max_objects() -> usize {
+        10
+    }
+
     pub fn is_dyanmic(&self) -> bool {
         self.is_dynamic
+    }
+
+    pub fn bounding_volume(&self) -> bool {
+        self.bounding_volume
+    }
+
+    pub fn max_objects(&self) -> usize {
+        self.max_objects
     }
 }
 

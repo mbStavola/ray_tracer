@@ -28,6 +28,7 @@ impl<'a> ScatterResponse<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct Lambertian {
     albedo: Vec3,
 }
@@ -39,21 +40,22 @@ impl Lambertian {
 }
 
 impl<T: Rng> Scatterable<T> for Lambertian {
-    fn scatter(&self, rng: &mut T, _ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse<'_>> {
         let target = hit.p() + hit.normal() + random_in_unit_sphere(rng);
-        let scattered = Ray::new(hit.p().clone(), target - hit.p());
+        let scattered = Ray::new(hit.p().clone(), target - hit.p(), ray.time());
         let response = ScatterResponse::new(scattered, &self.albedo);
         Some(response)
     }
 }
 
+#[derive(Debug)]
 pub struct Metal {
     albedo: Vec3,
-    fuzziness: f64,
+    fuzziness: f32,
 }
 
 impl Metal {
-    pub fn new(albedo: Vec3, fuzziness: f64) -> Metal {
+    pub fn new(albedo: Vec3, fuzziness: f32) -> Metal {
         let fuzziness = fuzziness.min(1.0);
         Metal { albedo, fuzziness }
     }
@@ -65,6 +67,7 @@ impl<T: Rng> Scatterable<T> for Metal {
         let scattered = Ray::new(
             hit.p().clone(),
             reflected + self.fuzziness * random_in_unit_sphere(rng),
+            ray.time(),
         );
 
         if scattered.direction().dot(hit.normal()) > 0.0 {
@@ -76,13 +79,14 @@ impl<T: Rng> Scatterable<T> for Metal {
     }
 }
 
+#[derive(Debug)]
 pub struct Dielectric {
-    ref_idx: f64,
+    ref_idx: f32,
     attenuation: Vec3, // TODO(Matt): Figure out a way to include this in scatter instead
 }
 
 impl Dielectric {
-    pub fn new(ref_idx: f64) -> Dielectric {
+    pub fn new(ref_idx: f32) -> Dielectric {
         Dielectric {
             ref_idx,
             attenuation: Vec3::new(1.0, 1.0, 1.0),
@@ -111,9 +115,9 @@ impl<T: Rng> Scatterable<T> for Dielectric {
             };
 
         let refracted = if rng.gen48() < reflect_prob {
-            Ray::new(hit.p().clone(), reflected)
+            Ray::new(hit.p().clone(), reflected, ray.time())
         } else {
-            Ray::new(hit.p().clone(), r.clone())
+            Ray::new(hit.p().clone(), r.clone(), ray.time())
         };
 
         let scatter = ScatterResponse::new(refracted, &self.attenuation);
@@ -122,6 +126,7 @@ impl<T: Rng> Scatterable<T> for Dielectric {
     }
 }
 
+#[derive(Debug)]
 pub enum Material {
     Lambertian(Lambertian),
     Dielectric(Dielectric),
@@ -129,19 +134,19 @@ pub enum Material {
 }
 
 impl Material {
-    pub fn lambertian(e0: f64, e1: f64, e2: f64) -> Material {
+    pub fn lambertian(e0: f32, e1: f32, e2: f32) -> Material {
         let albedo = Vec3::new(e0, e1, e2);
         let material = Lambertian::new(albedo);
         Material::Lambertian(material)
     }
 
-    pub fn metal(e0: f64, e1: f64, e2: f64, fuzziness: f64) -> Material {
+    pub fn metal(e0: f32, e1: f32, e2: f32, fuzziness: f32) -> Material {
         let albedo = Vec3::new(e0, e1, e2);
         let material = Metal::new(albedo, fuzziness);
         Material::Metal(material)
     }
 
-    pub fn dielectric(ref_idx: f64) -> Material {
+    pub fn dielectric(ref_idx: f32) -> Material {
         let material = Dielectric::new(ref_idx);
         Material::Dielectric(material)
     }
@@ -172,7 +177,7 @@ fn reflect(a: &Vec3, b: &Vec3) -> Vec3 {
     a - &(2.0 * a.dot(b) * b)
 }
 
-fn refract(a: &Vec3, b: &Vec3, ni_over_nt: f64) -> Option<Vec3> {
+fn refract(a: &Vec3, b: &Vec3, ni_over_nt: f32) -> Option<Vec3> {
     let uv = a.unit();
     let dt = uv.dot(b);
 
@@ -185,7 +190,7 @@ fn refract(a: &Vec3, b: &Vec3, ni_over_nt: f64) -> Option<Vec3> {
     }
 }
 
-fn schlick(cosine: f64, ref_idx: f64) -> f64 {
+fn schlick(cosine: f32, ref_idx: f32) -> f32 {
     let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     r0 *= r0;
     r0 + (1.0 - r0) * (1.0 - cosine).powi(5)

@@ -4,9 +4,9 @@ use serde::{Deserialize, Deserializer};
 use std::fmt::Formatter;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Vec3 {
-    e: [f64; 3],
+    e: [f32; 3],
 }
 
 impl Vec3 {
@@ -14,48 +14,48 @@ impl Vec3 {
         Vec3::default().unit()
     }
 
-    pub fn new(e0: f64, e1: f64, e3: f64) -> Vec3 {
+    pub fn new(e0: f32, e1: f32, e3: f32) -> Vec3 {
         let e = [e0, e1, e3];
         Vec3 { e }
     }
 
     #[inline(always)]
-    pub fn x(&self) -> f64 {
+    pub fn x(&self) -> f32 {
         self.e[0]
     }
 
     #[inline(always)]
-    pub fn y(&self) -> f64 {
+    pub fn y(&self) -> f32 {
         self.e[1]
     }
 
     #[inline(always)]
-    pub fn z(&self) -> f64 {
+    pub fn z(&self) -> f32 {
         self.e[2]
     }
 
     #[inline(always)]
-    pub fn r(&self) -> f64 {
+    pub fn r(&self) -> f32 {
         self.x()
     }
 
     #[inline(always)]
-    pub fn g(&self) -> f64 {
+    pub fn g(&self) -> f32 {
         self.y()
     }
 
     #[inline(always)]
-    pub fn b(&self) -> f64 {
+    pub fn b(&self) -> f32 {
         self.z()
     }
 
     #[inline(always)]
-    pub fn length(&self) -> f64 {
+    pub fn length(&self) -> f32 {
         self.square_length().sqrt()
     }
 
     #[inline(always)]
-    pub fn square_length(&self) -> f64 {
+    pub fn square_length(&self) -> f32 {
         self.x() * self.x() + self.y() * self.y() + self.z() * self.z()
     }
 
@@ -72,7 +72,7 @@ impl Vec3 {
         self
     }
 
-    pub fn dot(&self, other: &Self) -> f64 {
+    pub fn dot(&self, other: &Self) -> f32 {
         self.x() * other.x() + self.y() * other.y() + self.z() * other.z()
     }
 
@@ -105,9 +105,9 @@ impl<'de> Deserialize<'de> for Vec3 {
             where
                 V: MapAccess<'de>,
             {
-                let mut x: Option<f64> = None;
-                let mut y: Option<f64> = None;
-                let mut z: Option<f64> = None;
+                let mut x: Option<f32> = None;
+                let mut y: Option<f32> = None;
+                let mut z: Option<f32> = None;
 
                 while let Some((key, value)) = map.next_entry()? {
                     match key {
@@ -210,10 +210,10 @@ impl Mul<Vec3> for &Vec3 {
     }
 }
 
-impl Mul<f64> for &Vec3 {
+impl Mul<f32> for &Vec3 {
     type Output = Vec3;
 
-    fn mul(self, rhs: f64) -> Self::Output {
+    fn mul(self, rhs: f32) -> Self::Output {
         let x = self.x() * rhs;
         let y = self.y() * rhs;
         let z = self.z() * rhs;
@@ -222,15 +222,15 @@ impl Mul<f64> for &Vec3 {
     }
 }
 
-impl Mul<f64> for Vec3 {
+impl Mul<f32> for Vec3 {
     type Output = Vec3;
 
-    fn mul(self, rhs: f64) -> Self::Output {
+    fn mul(self, rhs: f32) -> Self::Output {
         rhs * &self
     }
 }
 
-impl Mul<Vec3> for f64 {
+impl Mul<Vec3> for f32 {
     type Output = Vec3;
 
     fn mul(self, rhs: Vec3) -> Self::Output {
@@ -238,7 +238,7 @@ impl Mul<Vec3> for f64 {
     }
 }
 
-impl Mul<&Vec3> for f64 {
+impl Mul<&Vec3> for f32 {
     type Output = Vec3;
 
     fn mul(self, rhs: &Vec3) -> Self::Output {
@@ -254,8 +254,8 @@ impl MulAssign for Vec3 {
     }
 }
 
-impl MulAssign<f64> for Vec3 {
-    fn mul_assign(&mut self, rhs: f64) {
+impl MulAssign<f32> for Vec3 {
+    fn mul_assign(&mut self, rhs: f32) {
         self.e[0] *= rhs;
         self.e[1] *= rhs;
         self.e[2] *= rhs;
@@ -274,10 +274,10 @@ impl Div for Vec3 {
     }
 }
 
-impl Div<f64> for Vec3 {
+impl Div<f32> for Vec3 {
     type Output = Vec3;
 
-    fn div(self, rhs: f64) -> Self::Output {
+    fn div(self, rhs: f32) -> Self::Output {
         let x = self.x() / rhs;
         let y = self.y() / rhs;
         let z = self.z() / rhs;
@@ -286,7 +286,7 @@ impl Div<f64> for Vec3 {
     }
 }
 
-impl Div<Vec3> for f64 {
+impl Div<Vec3> for f32 {
     type Output = Vec3;
 
     fn div(self, rhs: Vec3) -> Self::Output {
@@ -302,8 +302,8 @@ impl DivAssign for Vec3 {
     }
 }
 
-impl DivAssign<f64> for Vec3 {
-    fn div_assign(&mut self, rhs: f64) {
+impl DivAssign<f32> for Vec3 {
+    fn div_assign(&mut self, rhs: f32) {
         self.e[0] /= rhs;
         self.e[1] /= rhs;
         self.e[2] /= rhs;
@@ -366,7 +366,7 @@ impl Neg for Vec3 {
 }
 
 impl Index<usize> for Vec3 {
-    type Output = f64;
+    type Output = f32;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.e[index]
