@@ -61,9 +61,9 @@ impl AABB {
         };
 
         let big = {
-            let max_x = self.max().x().min(other.max().x());
-            let max_y = self.max().y().min(other.max().y());
-            let max_z = self.max().z().min(other.max().z());
+            let max_x = self.max().x().max(other.max().x());
+            let max_y = self.max().y().max(other.max().y());
+            let max_z = self.max().z().max(other.max().z());
 
             Vec3::new(max_x, max_y, max_z)
         };

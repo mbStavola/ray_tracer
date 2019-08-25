@@ -119,7 +119,7 @@ impl<'a, T: Rng> Hittable<'a, T> for Sphere {
     fn bounding_box(&self, time_start: f32, time_end: f32) -> Option<AABB> {
         let f = |center: &Vec3| {
             let min = center - Vec3::new(self.radius, self.radius, self.radius);
-            let max = center - Vec3::new(self.radius, self.radius, self.radius);
+            let max = center + Vec3::new(self.radius, self.radius, self.radius);
 
             AABB::new(min, max)
         };
