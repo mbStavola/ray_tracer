@@ -17,7 +17,7 @@ impl ConstantTexture {
 }
 
 impl Texturable for ConstantTexture {
-    fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+    fn value(&self, _u: f64, _v: f64, _p: &Vec3) -> Vec3 {
         self.color.clone()
     }
 }
@@ -49,7 +49,7 @@ impl Texturable for CheckerTexture {
 }
 
 #[derive(Clone, Debug)]
-struct NoiseTexture {
+pub struct NoiseTexture {
     noise: Perlin,
 }
 

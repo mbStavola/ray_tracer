@@ -1,6 +1,6 @@
 use crate::{util::RandomDouble, vec3::Vec3};
 use itertools::Itertools;
-use rand::{prelude::SmallRng, seq::SliceRandom, Rng};
+use rand::{seq::SliceRandom, Rng};
 
 const POINT_COUNT: usize = 256;
 
@@ -8,9 +8,9 @@ const POINT_COUNT: usize = 256;
 pub struct Perlin {
     random_floats: [f64; POINT_COUNT],
 
-    perm_x: [i32; 256],
-    perm_y: [i32; 256],
-    perm_z: [i32; 256],
+    perm_x: [i32; POINT_COUNT],
+    perm_y: [i32; POINT_COUNT],
+    perm_z: [i32; POINT_COUNT],
 }
 
 impl Perlin {
@@ -29,13 +29,13 @@ impl Perlin {
     }
 
     pub fn noise(&self, p: &Vec3) -> f64 {
-        let i: usize = (4.0 * p.x()) as usize & 255;
-        let j: usize = (4.0 * p.y()) as usize & 255;
-        let k: usize = (4.0 * p.z()) as usize & 255;
+        let i = (4.0 * p.x()) as i32 & 255;
+        let j = (4.0 * p.y()) as i32 & 255;
+        let k = (4.0 * p.z()) as i32 & 255;
 
-        let x = self.perm_x[i];
-        let y = self.perm_y[j];
-        let z = self.perm_z[k];
+        let x = self.perm_x[i as usize];
+        let y = self.perm_y[j as usize];
+        let z = self.perm_z[k as usize];
 
         let index = (x ^ y ^ z) as usize;
 
