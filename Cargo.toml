@@ -5,14 +5,15 @@ authors = ["Matt Stavola <mstavola9@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-toml = "0.5.1"
-rayon = "1.1.0"
-itertools = "0.8"
-serde = "1.0.98"
-serde_derive = "1.0.98"
+toml = "0.5.7"
+rayon = "1.5.0"
+itertools = "0.9.0"
+serde = "1.0.118"
+serde_derive = "1.0.118"
+image = "0.23.12"
 
 [dependencies.rand]
-version = "0.7.0"
+version = "0.7.3"
 features = ["small_rng"]
 
 [profile.release]

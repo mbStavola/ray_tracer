@@ -1,10 +1,11 @@
-use crate::vec3::Vec3;
+use crate::{perlin::Perlin, vec3::Vec3};
+use rand::Rng;
 
 pub trait Texturable {
     fn value(&self, u: f32, v: f32, p: &Vec3) -> Vec3;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ConstantTexture {
     color: Vec3,
 }
@@ -21,7 +22,7 @@ impl Texturable for ConstantTexture {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct CheckerTexture {
     even: Box<Texture>,
     odd: Box<Texture>,
@@ -47,17 +48,37 @@ impl Texturable for CheckerTexture {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+struct NoiseTexture {
+    noise: Perlin,
+}
+
+impl NoiseTexture {
+    pub fn new<T: Rng>(rng: &mut T) -> Self {
+        let noise = Perlin::new(rng);
+
+        NoiseTexture { noise }
+    }
+}
+
+impl Texturable for NoiseTexture {
+    fn value(&self, _u: f32, _v: f32, p: &Vec3) -> Vec3 {
+        Vec3::new(1.0, 1.0, 1.0) * self.noise.noise(p)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum Texture {
     Constant(ConstantTexture),
     Checker(CheckerTexture),
+    Noise(NoiseTexture),
 }
 
 impl Texture {
-    pub fn constant(r: f32, g: f32, b: f32) -> Texture {
+    pub fn constant(r: f32, g: f32, b: f32) -> Self {
         let color = Vec3::new(r, g, b);
         let texture = ConstantTexture::new(color);
-        Texture::Constant(texture)
+        Self::Constant(texture)
     }
 
     pub fn checker_color(
@@ -67,17 +88,22 @@ impl Texture {
         r_odd: f32,
         g_odd: f32,
         b_odd: f32,
-    ) -> Texture {
-        let even = Texture::constant(r_even, g_even, b_even);
-        let odd = Texture::constant(r_odd, g_odd, b_odd);
+    ) -> Self {
+        let even = Self::constant(r_even, g_even, b_even);
+        let odd = Self::constant(r_odd, g_odd, b_odd);
 
         let texture = CheckerTexture::new(even, odd);
-        Texture::Checker(texture)
+        Self::Checker(texture)
     }
 
-    pub fn checker(even: Texture, odd: Texture) -> Texture {
+    pub fn checker(even: Self, odd: Self) -> Self {
         let texture = CheckerTexture::new(even, odd);
-        Texture::Checker(texture)
+        Self::Checker(texture)
+    }
+
+    pub fn noise<T: Rng>(rng: &mut T) -> Self {
+        let texture = NoiseTexture::new(rng);
+        Self::Noise(texture)
     }
 }
 
@@ -86,6 +112,7 @@ impl Texturable for Texture {
         match self {
             Texture::Constant(texture) => texture.value(u, v, p),
             Texture::Checker(texture) => texture.value(u, v, p),
+            Texture::Noise(texture) => texture.value(u, v, p),
         }
     }
 }

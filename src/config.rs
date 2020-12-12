@@ -180,13 +180,15 @@ impl OutputConfig {
     }
 }
 
-#[derive(Debug, Default, Deserialize)]
-pub struct WorldConfig {
-    #[serde(default)]
-    is_dynamic: bool,
-
-    #[serde(WorldConfig::default_max_objects)]
-    max_objects: usize,
+#[derive(Debug, Deserialize)]
+#[serde(tag = "scene")]
+pub enum WorldConfig {
+    Basic,
+    Dynamic {
+        #[serde(default = "WorldConfig::default_max_objects")]
+        max_objects: usize,
+    },
+    Perlin,
 }
 
 impl WorldConfig {
@@ -194,13 +196,11 @@ impl WorldConfig {
     fn default_max_objects() -> usize {
         10
     }
+}
 
-    pub fn is_dyanmic(&self) -> bool {
-        self.is_dynamic
-    }
-
-    pub fn max_objects(&self) -> usize {
-        self.max_objects
+impl Default for WorldConfig {
+    fn default() -> Self {
+        Self::Basic
     }
 }
 

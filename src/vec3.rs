@@ -1,8 +1,12 @@
 use core::fmt;
-use serde::de::{self, MapAccess, Visitor};
-use serde::{Deserialize, Deserializer};
-use std::fmt::Formatter;
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign};
+use serde::{
+    de::{self, MapAccess, Visitor},
+    Deserialize, Deserializer,
+};
+use std::{
+    fmt::Formatter,
+    ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Vec3 {

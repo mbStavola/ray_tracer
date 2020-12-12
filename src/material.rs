@@ -1,7 +1,12 @@
 use rand::Rng;
 
-use crate::texture::{Texturable, Texture};
-use crate::{hittable::Hit, ray::Ray, util::DRand48, vec3::Vec3};
+use crate::{
+    hittable::Hit,
+    ray::Ray,
+    texture::{Texturable, Texture},
+    util::DRand48,
+    vec3::Vec3,
+};
 
 pub trait Scatterable<T: Rng> {
     fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse>;

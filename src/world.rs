@@ -1,10 +1,25 @@
 use itertools::Itertools;
-use rand::seq::SliceRandom;
-use rand::Rng;
+use rand::{seq::SliceRandom, Rng};
 
-use crate::bvh::BoundingVolumeHierarchy;
-use crate::texture::Texture;
-use crate::{hittable::Shape, material::Material, util::DRand48};
+use crate::{
+    bvh::BoundingVolumeHierarchy, config::WorldConfig, hittable::Shape, material::Material,
+    texture::Texture, util::DRand48,
+};
+
+pub fn gen_world<T: Rng>(
+    rng: &mut T,
+    world_config: &WorldConfig,
+    time_initial: f32,
+    time_final: f32,
+) -> BoundingVolumeHierarchy {
+    let world = match world_config {
+        WorldConfig::Basic => static_world(),
+        WorldConfig::Dynamic { max_objects } => random_world(rng, *max_objects),
+        WorldConfig::Perlin => two_perlin_spheres(rng),
+    };
+
+    BoundingVolumeHierarchy::new(rng, world, time_initial, time_final)
+}
 
 fn static_world() -> Vec<Shape> {
     let sphere_a = Shape::sphere(0.0, 0.0, -1.0, 0.5, Material::lambertian(0.8, 0.3, 0.3));
@@ -153,18 +168,18 @@ fn random_world<T: Rng>(rng: &mut T, max_objects: usize) -> Vec<Shape> {
     world
 }
 
-pub fn gen_world<T: Rng>(
-    rng: &mut T,
-    is_dynamic: bool,
-    max_objects: usize,
-    time_initial: f32,
-    time_final: f32,
-) -> BoundingVolumeHierarchy {
-    let world = if is_dynamic {
-        random_world(rng, max_objects)
-    } else {
-        static_world()
-    };
+fn two_perlin_spheres<T: Rng>(rng: &mut T) -> Vec<Shape> {
+    let texture = Texture::noise(rng);
 
-    BoundingVolumeHierarchy::new(rng, world, time_initial, time_final)
+    let ground_sphere = Shape::sphere(
+        0.0,
+        -1000.0,
+        0.0,
+        1000.0,
+        Material::textured(texture.clone()),
+    );
+
+    let sphere = Shape::sphere(0.0, 2.0, 0.0, 2.0, Material::textured(texture));
+
+    vec![ground_sphere, sphere]
 }

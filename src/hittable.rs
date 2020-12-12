@@ -1,8 +1,11 @@
 use rand::Rng;
 
-use crate::aabb::AABB;
-use crate::material::Material;
-use crate::{material::Scatterable, ray::Ray, vec3::Vec3};
+use crate::{
+    aabb::AABB,
+    material::{Material, Scatterable},
+    ray::Ray,
+    vec3::Vec3,
+};
 
 pub trait Hittable<'a, T: Rng>: Sync {
     fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit<'_, T>>;

@@ -15,6 +15,7 @@ mod camera;
 mod config;
 mod hittable;
 mod material;
+mod perlin;
 mod ppm;
 mod ray;
 mod renderer;
@@ -62,12 +63,10 @@ fn main() {
     let world = {
         let mut rng = SmallRng::from_entropy();
 
-        let is_dynamic = tracer_config.world_config().is_dyanmic();
-        let max_objects = tracer_config.world_config().max_objects();
         let time_start = tracer_config.camera_config().time_start();
         let time_end = tracer_config.camera_config().time_end();
 
-        gen_world(&mut rng, is_dynamic, max_objects, time_start, time_end)
+        gen_world(&mut rng, tracer_config.world_config(), time_start, time_end)
     };
 
     println!(
