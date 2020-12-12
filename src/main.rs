@@ -1,6 +1,6 @@
 #![deny(rust_2018_idioms)]
 
-use std::{env, f32, time::Instant};
+use std::{env, f64, time::Instant};
 
 use rand::{rngs::SmallRng, SeedableRng};
 
@@ -50,7 +50,7 @@ fn main() {
             look_at,
             v_up,
             camera_config.fov(),
-            screen_width as f32 / screen_height as f32,
+            screen_width as f64 / screen_height as f64,
             camera_config.aperture(),
             focus_distance,
             time_start,

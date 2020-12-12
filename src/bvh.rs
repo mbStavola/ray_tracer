@@ -6,7 +6,7 @@ use crate::{
     aabb::AABB,
     hittable::{Hit, Hittable, Shape},
     ray::Ray,
-    util::DRand48,
+    util::RandomDouble,
 };
 
 #[derive(Debug)]
@@ -19,8 +19,8 @@ impl<'a> BoundingVolumeHierarchy {
     pub fn new<T: Rng>(
         rng: &mut T,
         shapes: Vec<Shape>,
-        time_initial: f32,
-        time_final: f32,
+        time_initial: f64,
+        time_final: f64,
     ) -> BoundingVolumeHierarchy {
         let mut shapes = shapes;
         let root = BVHMember::new(rng, &mut shapes, time_initial, time_final);
@@ -38,11 +38,11 @@ impl<'a> BoundingVolumeHierarchy {
 }
 
 impl<'a, T: Rng> Hittable<'a, T> for BoundingVolumeHierarchy {
-    fn hit(&self, ray: &Ray, t_min: f32, t_max: f32) -> Option<Hit<'_, T>> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
         self.root.indexed_hit(&self.shapes, ray, t_min, t_max)
     }
 
-    fn bounding_box(&self, _time_start: f32, _time_end: f32) -> Option<AABB> {
+    fn bounding_box(&self, _time_start: f64, _time_end: f64) -> Option<AABB> {
         self.root.bounds().cloned()
     }
 }
@@ -61,8 +61,8 @@ impl BVHMember {
     pub fn new<T: Rng>(
         rng: &mut T,
         shapes: &mut [Shape],
-        time_initial: f32,
-        time_final: f32,
+        time_initial: f64,
+        time_final: f64,
     ) -> BVHMember {
         BVHMember::build_tree(rng, shapes, 0, shapes.len(), time_initial, time_final)
     }
@@ -100,10 +100,10 @@ impl BVHMember {
         shapes: &mut [Shape],
         offset: usize,
         n: usize,
-        time_initial: f32,
-        time_final: f32,
+        time_initial: f64,
+        time_final: f64,
     ) -> BVHMember {
-        let axis = (3.0 * rng.gen48()) as usize;
+        let axis = (3.0 * rng.random_double()) as usize;
         shapes.sort_by(|a, b| {
             let a: &dyn Hittable<'_, T> = a;
             let b: &dyn Hittable<'_, T> = b;
@@ -187,8 +187,8 @@ impl BVHMember {
         &'a self,
         shapes: &'a [Shape],
         ray: &Ray,
-        t_min: f32,
-        t_max: f32,
+        t_min: f64,
+        t_max: f64,
     ) -> Option<Hit<'a, T>> {
         let (bounds, left, right) = match self {
             BVHMember::Leaf(index) => {

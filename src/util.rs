@@ -1,11 +1,11 @@
 use rand::Rng;
 
-pub trait DRand48 {
-    fn gen48(&mut self) -> f32;
+pub trait RandomDouble {
+    fn random_double(&mut self) -> f64;
 }
 
-impl<T: Rng> DRand48 for T {
-    fn gen48(&mut self) -> f32 {
+impl<T: Rng> RandomDouble for T {
+    fn random_double(&mut self) -> f64 {
         self.gen_range(0.0, 1.0)
     }
 }

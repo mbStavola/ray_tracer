@@ -1,8 +1,8 @@
-use std::f32::consts::PI;
+use std::f64::consts::PI;
 
 use rand::Rng;
 
-use crate::{ray::Ray, util::DRand48, vec3::Vec3};
+use crate::{ray::Ray, util::RandomDouble, vec3::Vec3};
 
 pub struct Camera {
     origin: Vec3,
@@ -12,9 +12,9 @@ pub struct Camera {
     u: Vec3,
     v: Vec3,
     w: Vec3,
-    lens_radius: f32,
-    time_start: f32,
-    time_end: f32,
+    lens_radius: f64,
+    time_start: f64,
+    time_end: f64,
 }
 
 impl Camera {
@@ -22,12 +22,12 @@ impl Camera {
         look_from: Vec3,
         look_at: Vec3,
         v_up: Vec3,
-        vertical_fov: f32,
-        aspect: f32,
-        aperture: f32,
-        focus_distance: f32,
-        time_start: f32,
-        time_end: f32,
+        vertical_fov: f64,
+        aspect: f64,
+        aperture: f64,
+        focus_distance: f64,
+        time_start: f64,
+        time_end: f64,
     ) -> Camera {
         let lens_radius = aperture / 2.0;
 
@@ -62,20 +62,23 @@ impl Camera {
         }
     }
 
-    pub fn ray<T: Rng>(&self, rng: &mut T, s: f32, t: f32) -> Ray {
+    pub fn ray<T: Rng>(&self, rng: &mut T, s: f64, t: f64) -> Ray {
         let rd = self.lens_radius * random_in_unit_disk(rng);
         let offset = &self.u * rd.x() + &self.v * rd.y();
         let direction = &self.lower_left_corner + s * &self.horizontal + t * &self.vertical
             - &self.origin
             - &offset;
 
-        let time = self.time_start + (rng.gen48() as f32) * (self.time_end - self.time_start);
+        let time =
+            self.time_start + (rng.random_double() as f64) * (self.time_end - self.time_start);
         Ray::new(&self.origin + offset, direction, time)
     }
 }
 
 fn random_in_unit_disk<T: Rng>(rng: &mut T) -> Vec3 {
-    let mut gen_p = || 2.0 * Vec3::new(rng.gen48(), rng.gen48(), 0.0) - Vec3::new(1.0, 1.0, 0.0);
+    let mut gen_p = || {
+        2.0 * Vec3::new(rng.random_double(), rng.random_double(), 0.0) - Vec3::new(1.0, 1.0, 0.0)
+    };
 
     let mut p = gen_p();
     while p.dot(&p) >= 1.0 {

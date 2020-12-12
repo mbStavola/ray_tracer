@@ -3,14 +3,14 @@ use rand::{seq::SliceRandom, Rng};
 
 use crate::{
     bvh::BoundingVolumeHierarchy, config::WorldConfig, hittable::Shape, material::Material,
-    texture::Texture, util::DRand48,
+    texture::Texture, util::RandomDouble,
 };
 
 pub fn gen_world<T: Rng>(
     rng: &mut T,
     world_config: &WorldConfig,
-    time_initial: f32,
-    time_final: f32,
+    time_initial: f64,
+    time_final: f64,
 ) -> BoundingVolumeHierarchy {
     let world = match world_config {
         WorldConfig::Basic => static_world(),
@@ -37,7 +37,7 @@ fn static_world() -> Vec<Shape> {
     let mut spheres = vec![sphere_a, sphere_b, sphere_c, sphere_d, sphere_e];
 
     for i in 0..3 {
-        let i = i as f32;
+        let i = i as f64;
         let x = 1.5 + (i * 0.2);
         let z = -1.5 + (i * 0.2);
 
@@ -47,7 +47,7 @@ fn static_world() -> Vec<Shape> {
     }
 
     for i in 0..2 {
-        let i = i as f32;
+        let i = i as f64;
         let x = 1.1 + (i * 0.4) + i;
         let z = -1.3 - (i * 0.3) + i;
 
@@ -57,7 +57,7 @@ fn static_world() -> Vec<Shape> {
     }
 
     for i in 0..3 {
-        let i = i as f32;
+        let i = i as f64;
         let x = 1.2 - (i * 0.8) + i;
         let z = -1.6 + (i * 0.1) + i;
 
@@ -67,7 +67,7 @@ fn static_world() -> Vec<Shape> {
     }
 
     for i in 0..2 {
-        let i = i as f32;
+        let i = i as f64;
         let x = 1.4 + (i * 0.2) + i;
         let z = -1.2 + (i * 0.6) + i;
 
@@ -116,35 +116,35 @@ fn random_world<T: Rng>(rng: &mut T, max_objects: usize) -> Vec<Shape> {
                 break;
             }
 
-            let material_choice = rng.gen48();
+            let material_choice = rng.random_double();
             let material = if material_choice < 0.8 {
                 Material::lambertian(
-                    rng.gen48() * rng.gen48(),
-                    rng.gen48() * rng.gen48(),
-                    rng.gen48() * rng.gen48(),
+                    rng.random_double() * rng.random_double(),
+                    rng.random_double() * rng.random_double(),
+                    rng.random_double() * rng.random_double(),
                 )
             } else if material_choice < 0.95 {
                 Material::metal(
-                    0.5 * (1.0 + rng.gen48()),
-                    0.5 * (1.0 + rng.gen48()),
-                    0.5 * (1.0 + rng.gen48()),
-                    0.5 * rng.gen48(),
+                    0.5 * (1.0 + rng.random_double()),
+                    0.5 * (1.0 + rng.random_double()),
+                    0.5 * (1.0 + rng.random_double()),
+                    0.5 * rng.random_double(),
                 )
             } else {
                 Material::dielectric(1.5)
             };
 
-            let is_moving = rng.gen48() < 0.40;
+            let is_moving = rng.random_double() < 0.40;
             let sphere = if material_choice < 0.8 && is_moving {
-                let x = (a as f32) + 0.9 * rng.gen48();
-                let z = (b as f32) + 0.9 * rng.gen48();
+                let x = (a as f64) + 0.9 * rng.random_double();
+                let z = (b as f64) + 0.9 * rng.random_double();
 
                 Shape::moving_sphere(
                     x,
                     0.2,
                     z,
                     x,
-                    0.2 + (0.5 * rng.gen48()),
+                    0.2 + (0.5 * rng.random_double()),
                     z,
                     0.2,
                     material,
@@ -153,9 +153,9 @@ fn random_world<T: Rng>(rng: &mut T, max_objects: usize) -> Vec<Shape> {
                 )
             } else {
                 Shape::sphere(
-                    (a as f32) + 0.9 * rng.gen48(),
+                    (a as f64) + 0.9 * rng.random_double(),
                     0.2,
-                    (b as f32) + 0.9 * rng.gen48(),
+                    (b as f64) + 0.9 * rng.random_double(),
                     0.2,
                     material,
                 )

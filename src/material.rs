@@ -4,7 +4,7 @@ use crate::{
     hittable::Hit,
     ray::Ray,
     texture::{Texturable, Texture},
-    util::DRand48,
+    util::RandomDouble,
     vec3::Vec3,
 };
 
@@ -58,11 +58,11 @@ impl<'a, T: Rng> Scatterable<T> for Lambertian {
 #[derive(Debug)]
 pub struct Metal {
     albedo: Vec3,
-    fuzziness: f32,
+    fuzziness: f64,
 }
 
 impl Metal {
-    pub fn new(albedo: Vec3, fuzziness: f32) -> Metal {
+    pub fn new(albedo: Vec3, fuzziness: f64) -> Metal {
         let fuzziness = fuzziness.min(1.0);
         Metal { albedo, fuzziness }
     }
@@ -89,11 +89,11 @@ impl<T: Rng> Scatterable<T> for Metal {
 
 #[derive(Debug)]
 pub struct Dielectric {
-    ref_idx: f32,
+    ref_idx: f64,
 }
 
 impl Dielectric {
-    pub fn new(ref_idx: f32) -> Dielectric {
+    pub fn new(ref_idx: f64) -> Dielectric {
         Dielectric { ref_idx }
     }
 }
@@ -118,7 +118,7 @@ impl<T: Rng> Scatterable<T> for Dielectric {
                 (1.0, reflected.clone())
             };
 
-        let refracted = if rng.gen48() < reflect_prob {
+        let refracted = if rng.random_double() < reflect_prob {
             Ray::new(hit.p().clone(), reflected, ray.time())
         } else {
             Ray::new(hit.p().clone(), r.clone(), ray.time())
@@ -139,7 +139,7 @@ pub enum Material {
 }
 
 impl Material {
-    pub fn lambertian(r: f32, g: f32, b: f32) -> Material {
+    pub fn lambertian(r: f64, g: f64, b: f64) -> Material {
         let albedo = Texture::constant(r, g, b);
         let material = Lambertian::new(albedo);
         Material::Lambertian(material)
@@ -150,13 +150,13 @@ impl Material {
         Material::Lambertian(material)
     }
 
-    pub fn metal(e0: f32, e1: f32, e2: f32, fuzziness: f32) -> Material {
+    pub fn metal(e0: f64, e1: f64, e2: f64, fuzziness: f64) -> Material {
         let albedo = Vec3::new(e0, e1, e2);
         let material = Metal::new(albedo, fuzziness);
         Material::Metal(material)
     }
 
-    pub fn dielectric(ref_idx: f32) -> Material {
+    pub fn dielectric(ref_idx: f64) -> Material {
         let material = Dielectric::new(ref_idx);
         Material::Dielectric(material)
     }
@@ -173,8 +173,13 @@ impl<'a, T: Rng> Scatterable<T> for Material {
 }
 
 fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
-    let mut gen_p =
-        || 2.0 * Vec3::new(rng.gen48(), rng.gen48(), rng.gen48()) - Vec3::new(1.0, 1.0, 1.0);
+    let mut gen_p = || {
+        2.0 * Vec3::new(
+            rng.random_double(),
+            rng.random_double(),
+            rng.random_double(),
+        ) - Vec3::new(1.0, 1.0, 1.0)
+    };
 
     let mut p = gen_p();
     while p.square_length() >= 1.0 {
@@ -187,7 +192,7 @@ fn reflect(a: &Vec3, b: &Vec3) -> Vec3 {
     a - &(2.0 * a.dot(b) * b)
 }
 
-fn refract(a: &Vec3, b: &Vec3, ni_over_nt: f32) -> Option<Vec3> {
+fn refract(a: &Vec3, b: &Vec3, ni_over_nt: f64) -> Option<Vec3> {
     let uv = a.unit();
     let dt = uv.dot(b);
 
@@ -200,7 +205,7 @@ fn refract(a: &Vec3, b: &Vec3, ni_over_nt: f32) -> Option<Vec3> {
     }
 }
 
-fn schlick(cosine: f32, ref_idx: f32) -> f32 {
+fn schlick(cosine: f64, ref_idx: f64) -> f64 {
     let mut r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
     r0 *= r0;
     r0 + (1.0 - r0) * (1.0 - cosine).powi(5)

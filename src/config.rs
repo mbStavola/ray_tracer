@@ -34,27 +34,27 @@ impl TracerConfig {
 #[derive(Debug, Default, Deserialize)]
 pub struct CameraConfig {
     #[serde(default = "CameraConfig::default_fov")]
-    fov: f32,
+    fov: f64,
     #[serde(default = "CameraConfig::default_aperture")]
-    aperture: f32,
+    aperture: f64,
     #[serde(default = "CameraConfig::default_look_from")]
     look_from: Vec3,
     #[serde(default = "CameraConfig::default_look_at")]
     look_at: Vec3,
     #[serde(default = "CameraConfig::default_time_start")]
-    time_start: f32,
+    time_start: f64,
     #[serde(default = "CameraConfig::default_time_end")]
-    time_end: f32,
+    time_end: f64,
 }
 
 impl CameraConfig {
     #[allow(dead_code)]
-    fn default_fov() -> f32 {
+    fn default_fov() -> f64 {
         15.0
     }
 
     #[allow(dead_code)]
-    fn default_aperture() -> f32 {
+    fn default_aperture() -> f64 {
         0.2
     }
 
@@ -69,20 +69,20 @@ impl CameraConfig {
     }
 
     #[allow(dead_code)]
-    fn default_time_start() -> f32 {
+    fn default_time_start() -> f64 {
         0.0
     }
 
     #[allow(dead_code)]
-    fn default_time_end() -> f32 {
+    fn default_time_end() -> f64 {
         1.0
     }
 
-    pub fn fov(&self) -> f32 {
+    pub fn fov(&self) -> f64 {
         self.fov
     }
 
-    pub fn aperture(&self) -> f32 {
+    pub fn aperture(&self) -> f64 {
         self.aperture
     }
 
@@ -94,11 +94,11 @@ impl CameraConfig {
         &self.look_at
     }
 
-    pub fn time_start(&self) -> f32 {
+    pub fn time_start(&self) -> f64 {
         self.time_start
     }
 
-    pub fn time_end(&self) -> f32 {
+    pub fn time_end(&self) -> f64 {
         self.time_end
     }
 }

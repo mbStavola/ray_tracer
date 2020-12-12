@@ -2,7 +2,7 @@ use rand::{rngs::SmallRng, Rng, SeedableRng};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
-    bvh::BoundingVolumeHierarchy, camera::Camera, hittable::Hittable, ray::Ray, util::DRand48,
+    bvh::BoundingVolumeHierarchy, camera::Camera, hittable::Hittable, ray::Ray, util::RandomDouble,
     vec3::Vec3,
 };
 
@@ -73,13 +73,13 @@ fn render<'a, T: Rng>(
 
     let mut pixel = Vec3::default();
     for _ in 0..antialias_iterations {
-        let u = (i as f32 + rng.gen48()) / (screen_width as f32);
-        let v = (j as f32 + rng.gen48()) / (screen_height as f32);
+        let u = (i as f64 + rng.random_double()) / (screen_width as f64);
+        let v = (j as f64 + rng.random_double()) / (screen_height as f64);
 
         let ray = camera.ray(rng, u, v);
         pixel += color(rng, &ray, world, 0);
     }
-    pixel /= antialias_iterations as f32;
+    pixel /= antialias_iterations as f64;
     pixel = Vec3::new(pixel.r().sqrt(), pixel.g().sqrt(), pixel.b().sqrt());
     pixel *= 255.99;
 
@@ -87,7 +87,7 @@ fn render<'a, T: Rng>(
 }
 
 fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a dyn Hittable<'a, T>, depth: u8) -> Vec3 {
-    if let Some(hit) = world.hit(ray, 0.001, std::f32::INFINITY) {
+    if let Some(hit) = world.hit(ray, 0.001, std::f64::INFINITY) {
         if depth > 50 {
             return Vec3::new(0.0, 0.0, 0.0);
         }

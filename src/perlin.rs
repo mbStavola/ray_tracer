@@ -1,4 +1,4 @@
-use crate::{util::DRand48, vec3::Vec3};
+use crate::{util::RandomDouble, vec3::Vec3};
 use itertools::Itertools;
 use rand::{prelude::SmallRng, seq::SliceRandom, Rng};
 
@@ -6,7 +6,7 @@ const POINT_COUNT: usize = 256;
 
 #[derive(Clone, Debug)]
 pub struct Perlin {
-    random_floats: [f32; POINT_COUNT],
+    random_floats: [f64; POINT_COUNT],
 
     perm_x: [i32; 256],
     perm_y: [i32; 256],
@@ -17,7 +17,7 @@ impl Perlin {
     pub fn new<T: Rng>(rng: &mut T) -> Self {
         let mut random_floats = [0.0; POINT_COUNT];
         for i in 0..POINT_COUNT {
-            random_floats[i] = rng.gen48();
+            random_floats[i] = rng.random_double();
         }
 
         Self {
@@ -28,7 +28,7 @@ impl Perlin {
         }
     }
 
-    pub fn noise(&self, p: &Vec3) -> f32 {
+    pub fn noise(&self, p: &Vec3) -> f64 {
         let i: usize = (4.0 * p.x()) as usize & 255;
         let j: usize = (4.0 * p.y()) as usize & 255;
         let k: usize = (4.0 * p.z()) as usize & 255;
