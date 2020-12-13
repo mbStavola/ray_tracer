@@ -14,15 +14,26 @@ pub trait Hittable<'a, T: Rng>: Sync {
 
 pub struct Hit<'a, T: Rng> {
     t: f64,
+    u: f64,
+    v: f64,
     p: Vec3,
     normal: Vec3,
     material: &'a dyn Scatterable<T>,
 }
 
 impl<T: Rng> Hit<'_, T> {
-    pub fn new(t: f64, p: Vec3, normal: Vec3, material: &'_ dyn Scatterable<T>) -> Hit<'_, T> {
+    pub fn new(
+        t: f64,
+        u: f64,
+        v: f64,
+        p: Vec3,
+        normal: Vec3,
+        material: &'_ dyn Scatterable<T>,
+    ) -> Hit<'_, T> {
         Hit {
             t,
+            u,
+            v,
             p,
             normal,
             material,
@@ -31,6 +42,14 @@ impl<T: Rng> Hit<'_, T> {
 
     pub fn t(&self) -> f64 {
         self.t
+    }
+
+    pub fn u(&self) -> f64 {
+        self.u
+    }
+
+    pub fn v(&self) -> f64 {
+        self.v
     }
 
     pub fn p(&self) -> &Vec3 {
@@ -114,7 +133,8 @@ impl<'a, T: Rng> Hittable<'a, T> for Sphere {
         let normal = (&p - &self.center(ray.time())) / self.radius;
         let material = &self.material;
 
-        let hit = Hit::new(t, p, normal, material);
+        let (u, v) = sphere_uv(&normal);
+        let hit = Hit::new(t, u, v, p, normal, material);
 
         Some(hit)
     }
@@ -259,4 +279,23 @@ fn bounding_box<'a, T: Rng>(shapes: &[Shape], time_start: f64, time_end: f64) ->
     }
 
     Some(aabb)
+}
+
+fn sphere_uv(p: &Vec3) -> (f64, f64) {
+    use std::f64::consts::{PI, TAU};
+
+    // p: a given point on the sphere of radius one, centered at the origin.
+    // u: returned value [0,1] of angle around the Y axis from X=-1.
+    // v: returned value [0,1] of angle from Y=-1 to Y=+1.
+    //     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+    //     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+    //     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+
+    let theta = (-p.y()).acos();
+    let phi = (-p.z()).atan2(p.x()) + PI;
+
+    let u = phi / TAU;
+    let v = theta / PI;
+
+    (u, v)
 }

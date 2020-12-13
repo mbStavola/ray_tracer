@@ -188,7 +188,9 @@ pub enum WorldConfig {
         #[serde(default = "WorldConfig::default_max_objects")]
         max_objects: usize,
     },
+    Checker,
     Perlin,
+    Earth,
 }
 
 impl WorldConfig {

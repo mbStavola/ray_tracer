@@ -1,5 +1,10 @@
 use crate::{perlin::Perlin, vec3::Vec3};
+use image::{self, DynamicImage, GenericImageView, ImageError};
 use rand::Rng;
+use std::{
+    fmt::{Debug, Formatter},
+    path::Path,
+};
 
 pub trait Texturable {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3;
@@ -58,13 +63,13 @@ impl NoiseTexture {
     pub fn new<T: Rng>(rng: &mut T) -> Self {
         let noise = Perlin::new(rng);
 
-        NoiseTexture { noise, scale: 1.0 }
+        Self { noise, scale: 1.0 }
     }
 
     pub fn with_scale<T: Rng>(rng: &mut T, scale: f64) -> Self {
         let noise = Perlin::new(rng);
 
-        NoiseTexture { noise, scale }
+        Self { noise, scale }
     }
 }
 
@@ -75,11 +80,47 @@ impl Texturable for NoiseTexture {
     }
 }
 
+#[derive(Clone)]
+pub struct ImageTexture {
+    image: DynamicImage,
+}
+
+impl ImageTexture {
+    pub fn new(image: DynamicImage) -> Self {
+        Self { image }
+    }
+}
+
+impl Debug for ImageTexture {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("ImageTexture")
+    }
+}
+
+impl Texturable for ImageTexture {
+    fn value(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        let u = fclamp(u, 0.0, 1.0);
+        let v = 1.0 - fclamp(v, 0.0, 1.0); // Flip V to image coords
+
+        let i = (u * self.image.width() as f64) as u32;
+        let j = (v * self.image.height() as f64) as u32;
+
+        let i = clamp(i, 0, self.image.width() - 1);
+        let j = clamp(j, 0, self.image.height() - 1);
+
+        let color_scale = 1.0 / 255.0;
+        let pixel = self.image.get_pixel(i, j);
+
+        color_scale * Vec3::new(pixel[0] as f64, pixel[1] as f64, pixel[2] as f64)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum Texture {
     Constant(ConstantTexture),
     Checker(CheckerTexture),
     Noise(NoiseTexture),
+    Image(ImageTexture),
 }
 
 impl Texture {
@@ -118,6 +159,21 @@ impl Texture {
         let texture = NoiseTexture::with_scale(rng, scale);
         Self::Noise(texture)
     }
+
+    pub fn image<P: AsRef<Path>>(filepath: P) -> Self {
+        let filepath = filepath.as_ref();
+        let texture = match image::open(filepath) {
+            Ok(texture) => texture,
+            // The file was not found, log and return an error texture
+            Err(e) => {
+                eprintln!("Unable to load image {:?}: {}", filepath, e);
+                return Texture::constant(0.0, 1.0, 1.0);
+            }
+            _ => panic!(""),
+        };
+        let texture = ImageTexture::new(texture);
+        Self::Image(texture)
+    }
 }
 
 impl Texturable for Texture {
@@ -126,6 +182,31 @@ impl Texturable for Texture {
             Texture::Constant(texture) => texture.value(u, v, p),
             Texture::Checker(texture) => texture.value(u, v, p),
             Texture::Noise(texture) => texture.value(u, v, p),
+            Texture::Image(texture) => texture.value(u, v, p),
         }
     }
+}
+
+fn fclamp(mut x: f64, min: f64, max: f64) -> f64 {
+    if x < min {
+        x = min;
+    }
+
+    if x > max {
+        x = max;
+    }
+
+    x
+}
+
+fn clamp(mut x: u32, min: u32, max: u32) -> u32 {
+    if x < min {
+        x = min;
+    }
+
+    if x > max {
+        x = max;
+    }
+
+    x
 }

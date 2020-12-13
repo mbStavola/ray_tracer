@@ -1,7 +1,8 @@
-!resources/tracer.toml
 resources/*.png
 resources/*.jpg
 resources/*.ppm
+!resources/tracer.toml
+!resources/earthmap.jpg
 .idea/
 /target
 **/*.rs.bk

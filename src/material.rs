@@ -49,7 +49,7 @@ impl<'a, T: Rng> Scatterable<T> for Lambertian {
     fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
         let target = hit.p() + hit.normal() + random_in_unit_sphere(rng);
         let scattered = Ray::new(hit.p().clone(), target - hit.p(), ray.time());
-        let attenuation = self.albedo.value(0.0, 0.0, hit.p());
+        let attenuation = self.albedo.value(hit.u(), hit.v(), hit.p());
         let response = ScatterResponse::new(scattered, attenuation);
         Some(response)
     }

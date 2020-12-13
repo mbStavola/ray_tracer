@@ -3,7 +3,7 @@ use rand::{seq::SliceRandom, Rng};
 
 use crate::{
     bvh::BoundingVolumeHierarchy, config::WorldConfig, hittable::Shape, material::Material,
-    texture::Texture, util::RandomDouble,
+    texture::Texture, util::RandomDouble, vec3::Vec3,
 };
 
 pub fn gen_world<T: Rng>(
@@ -15,7 +15,9 @@ pub fn gen_world<T: Rng>(
     let world = match world_config {
         WorldConfig::Basic => static_world(),
         WorldConfig::Dynamic { max_objects } => random_world(rng, *max_objects),
+        WorldConfig::Checker => two_checker_spheres(),
         WorldConfig::Perlin => two_perlin_spheres(rng),
+        WorldConfig::Earth => earth(),
     };
 
     BoundingVolumeHierarchy::new(rng, world, time_initial, time_final)
@@ -168,6 +170,15 @@ fn random_world<T: Rng>(rng: &mut T, max_objects: usize) -> Vec<Shape> {
     world
 }
 
+fn two_checker_spheres() -> Vec<Shape> {
+    let texture = Texture::checker_color(0.2, 0.3, 0.1, 0.9, 0.9, 0.9);
+
+    let bottom = Shape::sphere(0.0, -10.0, 0.0, 10.0, Material::textured(texture.clone()));
+    let top = Shape::sphere(0.0, 10.0, 0.0, 10.0, Material::textured(texture.clone()));
+
+    vec![bottom, top]
+}
+
 fn two_perlin_spheres<T: Rng>(rng: &mut T) -> Vec<Shape> {
     let texture = Texture::scaled_noise(rng, 4.0);
 
@@ -182,4 +193,10 @@ fn two_perlin_spheres<T: Rng>(rng: &mut T) -> Vec<Shape> {
     let sphere = Shape::sphere(0.0, 2.0, 0.0, 2.0, Material::textured(texture));
 
     vec![ground_sphere, sphere]
+}
+
+fn earth() -> Vec<Shape> {
+    let texture = Texture::image("resources/earthmap.jpg");
+    let globe = Shape::sphere(0.0, 0.0, 0.0, 2.0, Material::textured(texture));
+    vec![globe]
 }
