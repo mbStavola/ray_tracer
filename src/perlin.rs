@@ -1,14 +1,15 @@
-use crate::{util::RandomDouble, vec3::Vec3};
+use crate::vec3::Vec3;
 use itertools::Itertools;
 use rand::{seq::SliceRandom, Rng};
+use std::{mem, mem::MaybeUninit};
 
-type TrilinearSample = [[[f64; 2]; 2]; 2];
+type TrilinearSample = [[[Vec3; 2]; 2]; 2];
 
 const POINT_COUNT: usize = 256;
 
 #[derive(Clone, Debug)]
 pub struct Perlin {
-    random_floats: [f64; POINT_COUNT],
+    random_vecs: [Vec3; POINT_COUNT],
 
     perm_x: [i32; POINT_COUNT],
     perm_y: [i32; POINT_COUNT],
@@ -17,13 +18,17 @@ pub struct Perlin {
 
 impl Perlin {
     pub fn new<T: Rng>(rng: &mut T) -> Self {
-        let mut random_floats = [0.0; POINT_COUNT];
-        for i in 0..POINT_COUNT {
-            random_floats[i] = rng.random_double();
+        // UNSAFE(Matt):
+        // This is fine because we immediately initialize the memory right after
+        let mut random_vecs: [MaybeUninit<Vec3>; POINT_COUNT] =
+            unsafe { MaybeUninit::uninit().assume_init() };
+
+        for random_vec in random_vecs.iter_mut() {
+            *random_vec = MaybeUninit::new(Vec3::random(rng, -1.0, 1.0).unit());
         }
 
         Self {
-            random_floats,
+            random_vecs: unsafe { mem::transmute(random_vecs) },
             perm_x: generate_perm(rng),
             perm_y: generate_perm(rng),
             perm_z: generate_perm(rng),
@@ -35,15 +40,14 @@ impl Perlin {
         let v = p.y() - p.y().floor();
         let w = p.z() - p.z().floor();
 
-        let u = u * u * (3.0 - 2.0 * u);
-        let v = v * v * (3.0 - 2.0 * v);
-        let w = w * w * (3.0 - 2.0 * w);
-
         let i = p.x().floor() as i32;
         let j = p.y().floor() as i32;
         let k = p.z().floor() as i32;
 
-        let mut sample: TrilinearSample = [[[0.0; 2]; 2]; 2];
+        // UNSAFE(Matt):
+        // This is fine because we immediately initialize the memory right after
+        let mut sample: [[[MaybeUninit<Vec3>; 2]; 2]; 2] =
+            unsafe { MaybeUninit::uninit().assume_init() };
         for di in 0..2 {
             for dj in 0..2 {
                 for dk in 0..2 {
@@ -57,12 +61,13 @@ impl Perlin {
 
                     let index = (x ^ y ^ z) as usize;
 
-                    sample[di][dj][dk] = self.random_floats[index];
+                    let sample = &mut sample[di][dj][dk];
+                    *sample = MaybeUninit::new(self.random_vecs[index].clone());
                 }
             }
         }
 
-        trilinear_interp(sample, u, v, w)
+        trilinear_interp(unsafe { mem::transmute(sample) }, u, v, w)
     }
 }
 
@@ -79,15 +84,20 @@ fn generate_perm<T: Rng>(rng: &mut T) -> [i32; POINT_COUNT] {
 }
 
 fn trilinear_interp(sample: TrilinearSample, u: f64, v: f64, w: f64) -> f64 {
+    let uu = u * u * (3.0 - 2.0 * u);
+    let vv = v * v * (3.0 - 2.0 * v);
+    let ww = w * w * (3.0 - 2.0 * w);
+
     let mut accumulator = 0.0;
     for i in 0..2 {
         for j in 0..2 {
             for k in 0..2 {
-                let color = sample[i][j][k];
+                let weight = Vec3::new(u - i as f64, v - j as f64, w - k as f64);
+                let color = weight.dot(&sample[i][j][k]);
 
-                let i = i as f64 * u + (1.0 - i as f64) * (1.0 - u);
-                let j = j as f64 * v + (1.0 - j as f64) * (1.0 - v);
-                let k = k as f64 * w + (1.0 - k as f64) * (1.0 - w);
+                let i = i as f64 * uu + (1.0 - i as f64) * (1.0 - uu);
+                let j = j as f64 * vv + (1.0 - j as f64) * (1.0 - vv);
+                let k = k as f64 * ww + (1.0 - k as f64) * (1.0 - ww);
 
                 accumulator += color * i * j * k;
             }

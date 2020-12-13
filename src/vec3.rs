@@ -1,4 +1,6 @@
+use crate::util::RandomDouble;
 use core::fmt;
+use rand::Rng;
 use serde::{
     de::{self, MapAccess, Visitor},
     Deserialize, Deserializer,
@@ -21,6 +23,14 @@ impl Vec3 {
     pub fn new(e0: f64, e1: f64, e3: f64) -> Vec3 {
         let e = [e0, e1, e3];
         Vec3 { e }
+    }
+
+    pub fn random<T: Rng>(rng: &mut T, lower: f64, upper: f64) -> Self {
+        let x = rng.gen_range(lower, upper);
+        let y = rng.gen_range(lower, upper);
+        let z = rng.gen_range(lower, upper);
+
+        Vec3 { e: [x, y, z] }
     }
 
     #[inline(always)]
