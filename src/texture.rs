@@ -51,19 +51,27 @@ impl Texturable for CheckerTexture {
 #[derive(Clone, Debug)]
 pub struct NoiseTexture {
     noise: Perlin,
+    scale: f64,
 }
 
 impl NoiseTexture {
     pub fn new<T: Rng>(rng: &mut T) -> Self {
         let noise = Perlin::new(rng);
 
-        NoiseTexture { noise }
+        NoiseTexture { noise, scale: 1.0 }
+    }
+
+    pub fn with_scale<T: Rng>(rng: &mut T, scale: f64) -> Self {
+        let noise = Perlin::new(rng);
+
+        NoiseTexture { noise, scale }
     }
 }
 
 impl Texturable for NoiseTexture {
     fn value(&self, _u: f64, _v: f64, p: &Vec3) -> Vec3 {
-        Vec3::new(1.0, 1.0, 1.0) * self.noise.noise(p)
+        let p = self.scale * p;
+        Vec3::new(1.0, 1.0, 1.0) * self.noise.noise(&p)
     }
 }
 
@@ -103,6 +111,11 @@ impl Texture {
 
     pub fn noise<T: Rng>(rng: &mut T) -> Self {
         let texture = NoiseTexture::new(rng);
+        Self::Noise(texture)
+    }
+
+    pub fn scaled_noise<T: Rng>(rng: &mut T, scale: f64) -> Self {
+        let texture = NoiseTexture::with_scale(rng, scale);
         Self::Noise(texture)
     }
 }

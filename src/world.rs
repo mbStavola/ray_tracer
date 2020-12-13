@@ -169,7 +169,7 @@ fn random_world<T: Rng>(rng: &mut T, max_objects: usize) -> Vec<Shape> {
 }
 
 fn two_perlin_spheres<T: Rng>(rng: &mut T) -> Vec<Shape> {
-    let texture = Texture::noise(rng);
+    let texture = Texture::scaled_noise(rng, 4.0);
 
     let ground_sphere = Shape::sphere(
         0.0,
