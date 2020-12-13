@@ -1,5 +1,7 @@
 use crate::{ray::Ray, vec3::Vec3};
 
+use std::mem;
+
 #[derive(Debug, Clone)]
 pub struct AABB {
     min: Vec3,
@@ -34,9 +36,7 @@ impl AABB {
             let mut t1 = (max_component - origin_component) * direction_component;
 
             if direction_component < 0.0 {
-                let tmp = t0;
-                t0 = t1;
-                t1 = tmp;
+                mem::swap(&mut t0, &mut t1);
             }
 
             min_t = t0.max(min_t);

@@ -121,7 +121,7 @@ impl<T: Rng> Scatterable<T> for Dielectric {
         let refracted = if rng.random_double() < reflect_prob {
             Ray::new(hit.p().clone(), reflected, ray.time())
         } else {
-            Ray::new(hit.p().clone(), r.clone(), ray.time())
+            Ray::new(hit.p().clone(), r, ray.time())
         };
 
         let attenuation = Vec3::new(1.0, 1.0, 1.0);
@@ -132,33 +132,60 @@ impl<T: Rng> Scatterable<T> for Dielectric {
 }
 
 #[derive(Debug)]
+pub struct DiffuseLight {
+    texture: Texture,
+}
+
+impl DiffuseLight {
+    fn new(texture: Texture) -> Self {
+        Self { texture }
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        self.texture.value(u, v, p)
+    }
+}
+
+impl<T: Rng> Scatterable<T> for DiffuseLight {
+    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug)]
 pub enum Material {
     Lambertian(Lambertian),
     Dielectric(Dielectric),
     Metal(Metal),
+    DiffuseLight(DiffuseLight),
 }
 
 impl Material {
-    pub fn lambertian(r: f64, g: f64, b: f64) -> Material {
+    pub fn lambertian(r: f64, g: f64, b: f64) -> Self {
         let albedo = Texture::constant(r, g, b);
         let material = Lambertian::new(albedo);
-        Material::Lambertian(material)
+        Self::Lambertian(material)
     }
 
-    pub fn textured(texture: Texture) -> Material {
+    pub fn textured(texture: Texture) -> Self {
         let material = Lambertian::new(texture);
-        Material::Lambertian(material)
+        Self::Lambertian(material)
     }
 
-    pub fn metal(e0: f64, e1: f64, e2: f64, fuzziness: f64) -> Material {
+    pub fn metal(e0: f64, e1: f64, e2: f64, fuzziness: f64) -> Self {
         let albedo = Vec3::new(e0, e1, e2);
         let material = Metal::new(albedo, fuzziness);
-        Material::Metal(material)
+        Self::Metal(material)
     }
 
-    pub fn dielectric(ref_idx: f64) -> Material {
+    pub fn dielectric(ref_idx: f64) -> Self {
         let material = Dielectric::new(ref_idx);
-        Material::Dielectric(material)
+        Self::Dielectric(material)
+    }
+
+    pub fn diffuse_light(texture: Texture) -> Self {
+        let material = DiffuseLight::new(texture);
+        Self::DiffuseLight(material)
     }
 }
 
@@ -168,6 +195,7 @@ impl<'a, T: Rng> Scatterable<T> for Material {
             Material::Lambertian(material) => material.scatter(rng, ray, hit),
             Material::Dielectric(material) => material.scatter(rng, ray, hit),
             Material::Metal(material) => material.scatter(rng, ray, hit),
+            Material::DiffuseLight(material) => material.scatter(rng, ray, hit),
         }
     }
 }

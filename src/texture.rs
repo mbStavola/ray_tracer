@@ -1,5 +1,5 @@
 use crate::{perlin::Perlin, vec3::Vec3};
-use image::{self, DynamicImage, GenericImageView, ImageError};
+use image::{self, DynamicImage, GenericImageView};
 use rand::Rng;
 use std::{
     fmt::{Debug, Formatter},
@@ -55,7 +55,7 @@ impl Texturable for CheckerTexture {
 
 #[derive(Clone, Debug)]
 pub struct NoiseTexture {
-    noise: Perlin,
+    noise: Box<Perlin>,
     scale: f64,
 }
 
@@ -63,13 +63,19 @@ impl NoiseTexture {
     pub fn new<T: Rng>(rng: &mut T) -> Self {
         let noise = Perlin::new(rng);
 
-        Self { noise, scale: 1.0 }
+        Self {
+            noise: Box::new(noise),
+            scale: 1.0,
+        }
     }
 
     pub fn with_scale<T: Rng>(rng: &mut T, scale: f64) -> Self {
         let noise = Perlin::new(rng);
 
-        Self { noise, scale }
+        Self {
+            noise: Box::new(noise),
+            scale,
+        }
     }
 }
 
@@ -169,7 +175,6 @@ impl Texture {
                 eprintln!("Unable to load image {:?}: {}", filepath, e);
                 return Texture::constant(0.0, 1.0, 1.0);
             }
-            _ => panic!(""),
         };
         let texture = ImageTexture::new(texture);
         Self::Image(texture)

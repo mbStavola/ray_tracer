@@ -3,7 +3,7 @@ use rand::{seq::SliceRandom, Rng};
 
 use crate::{
     bvh::BoundingVolumeHierarchy, config::WorldConfig, hittable::Shape, material::Material,
-    texture::Texture, util::RandomDouble, vec3::Vec3,
+    texture::Texture, util::RandomDouble,
 };
 
 pub fn gen_world<T: Rng>(
@@ -174,7 +174,7 @@ fn two_checker_spheres() -> Vec<Shape> {
     let texture = Texture::checker_color(0.2, 0.3, 0.1, 0.9, 0.9, 0.9);
 
     let bottom = Shape::sphere(0.0, -10.0, 0.0, 10.0, Material::textured(texture.clone()));
-    let top = Shape::sphere(0.0, 10.0, 0.0, 10.0, Material::textured(texture.clone()));
+    let top = Shape::sphere(0.0, 10.0, 0.0, 10.0, Material::textured(texture));
 
     vec![bottom, top]
 }

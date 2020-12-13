@@ -81,16 +81,16 @@ impl BVHMember {
         }
     }
 
-    pub fn left(&self) -> Option<&Box<BVHMember>> {
+    pub fn left(&self) -> Option<&BVHMember> {
         match self {
-            BVHMember::Node { left, .. } => left.as_ref(),
+            BVHMember::Node { left, .. } => left.as_deref(),
             BVHMember::Leaf(_) => None,
         }
     }
 
-    pub fn right(&self) -> Option<&Box<BVHMember>> {
+    pub fn right(&self) -> Option<&BVHMember> {
         match self {
-            BVHMember::Node { right, .. } => right.as_ref(),
+            BVHMember::Node { right, .. } => right.as_deref(),
             BVHMember::Leaf(_) => None,
         }
     }
@@ -171,8 +171,7 @@ impl BVHMember {
                 time_final,
             );
 
-            let shapes = &*&shapes as &dyn Hittable<'_, T>;
-
+            let shapes = &shapes as &dyn Hittable<'_, T>;
             let bounds = shapes.bounding_box(time_initial, time_final).expect("");
 
             BVHMember::Node {

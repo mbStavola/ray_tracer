@@ -6,6 +6,7 @@ use crate::{
     ray::Ray,
     vec3::Vec3,
 };
+use std::fmt::Debug;
 
 pub trait Hittable<'a, T: Rng>: Sync {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>>;
@@ -65,48 +66,30 @@ impl<T: Rng> Hit<'_, T> {
     }
 }
 
+pub trait Center {
+    fn center(&self, time: f64) -> Vec3;
+}
+
 #[derive(Debug)]
 pub struct Sphere {
-    center_initial: Vec3,
-    center_final: Vec3,
+    center: Vec3,
     radius: f64,
     material: Material,
-    time_start: f64,
-    time_end: f64,
 }
 
 impl Sphere {
-    pub fn new(
-        center_initial: Vec3,
-        center_final: Vec3,
-        radius: f64,
-        material: Material,
-        time_start: f64,
-        time_end: f64,
-    ) -> Sphere {
+    pub fn new(center: Vec3, radius: f64, material: Material) -> Sphere {
         Sphere {
-            center_initial,
-            center_final,
+            center,
             radius,
             material,
-            time_start,
-            time_end,
         }
-    }
-
-    pub fn center(&self, time: f64) -> Vec3 {
-        let elapsed_time = (time - self.time_start) as f64;
-        let movement_time = (self.time_end - self.time_start) as f64;
-
-        let distance = &self.center_final - &self.center_initial;
-
-        &self.center_initial + ((elapsed_time / movement_time) * &distance)
     }
 }
 
 impl<'a, T: Rng> Hittable<'a, T> for Sphere {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
-        let oc = ray.origin() - &self.center(ray.time());
+        let oc = ray.origin() - &self.center;
 
         let a = ray.direction().dot(ray.direction());
         let b = oc.dot(ray.direction());
@@ -130,8 +113,77 @@ impl<'a, T: Rng> Hittable<'a, T> for Sphere {
         };
 
         let p = ray.point_at(t);
-        let normal = (&p - &self.center(ray.time())) / self.radius;
+        let normal = (&p - &self.center) / self.radius;
         let material = &self.material;
+
+        let (u, v) = sphere_uv(&normal);
+        let hit = Hit::new(t, u, v, p, normal, material);
+
+        Some(hit)
+    }
+
+    fn bounding_box(&self, _time_start: f64, _time_end: f64) -> Option<AABB> {
+        let min = &self.center - Vec3::new(self.radius, self.radius, self.radius);
+        let max = &self.center + Vec3::new(self.radius, self.radius, self.radius);
+
+        Some(AABB::new(min, max))
+    }
+}
+
+impl Center for Sphere {
+    fn center(&self, _time: f64) -> Vec3 {
+        self.center.clone()
+    }
+}
+
+#[derive(Debug)]
+pub struct Moving<T: Center + Debug> {
+    object: T,
+    center_final: Vec3,
+    time_start: f64,
+    time_end: f64,
+}
+
+impl<T: Center + Debug> Moving<T> {
+    fn new(object: T, center_final: Vec3, time_start: f64, time_end: f64) -> Self {
+        Self {
+            object,
+            center_final,
+            time_start,
+            time_end,
+        }
+    }
+}
+
+impl<'a, T: Rng> Hittable<'a, T> for Moving<Sphere> {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
+        let radius = self.object.radius;
+        let oc = ray.origin() - &self.center(ray.time());
+
+        let a = ray.direction().dot(ray.direction());
+        let b = oc.dot(ray.direction());
+        let c = oc.dot(&oc) - radius * radius;
+
+        let discriminant = b * b - a * c;
+        if discriminant < 0.0 {
+            return None;
+        }
+        let discriminant = discriminant.sqrt();
+
+        let f = (-b - discriminant) / a;
+        let g = (-b + discriminant) / a;
+
+        let t = if f < t_max && f > t_min {
+            f
+        } else if g < t_max && g > t_min {
+            g
+        } else {
+            return None;
+        };
+
+        let p = ray.point_at(t);
+        let normal = (&p - &self.center(ray.time())) / radius;
+        let material = &self.object.material;
 
         let (u, v) = sphere_uv(&normal);
         let hit = Hit::new(t, u, v, p, normal, material);
@@ -141,19 +193,24 @@ impl<'a, T: Rng> Hittable<'a, T> for Sphere {
 
     fn bounding_box(&self, time_start: f64, time_end: f64) -> Option<AABB> {
         let f = |center: &Vec3| {
-            let min = center - Vec3::new(self.radius, self.radius, self.radius);
-            let max = center + Vec3::new(self.radius, self.radius, self.radius);
+            let radius = self.object.radius;
+
+            let min = center - Vec3::new(radius, radius, radius);
+            let max = center + Vec3::new(radius, radius, radius);
 
             AABB::new(min, max)
         };
 
-        if self.center_initial == self.center_final {
-            let aabb = f(&self.center_initial);
+        let center_initial = self.center(time_start);
+        let center_final = self.center(time_end);
+
+        if center_initial == center_final {
+            let aabb = f(&center_initial);
             return Some(aabb);
         }
 
-        let initial_box = f(&self.center_initial);
-        let final_box = f(&self.center_final);
+        let initial_box = f(&center_initial);
+        let final_box = f(&center_final);
 
         let surrounding_box = initial_box.surrounding_box(&final_box);
 
@@ -161,15 +218,29 @@ impl<'a, T: Rng> Hittable<'a, T> for Sphere {
     }
 }
 
+impl<T: Center + Debug> Center for Moving<T> {
+    fn center(&self, time: f64) -> Vec3 {
+        // Always assume t=0 for initial center
+        let center_initial = &self.object.center(0.0);
+
+        let elapsed_time = (time - self.time_start) as f64;
+        let movement_time = (self.time_end - self.time_start) as f64;
+
+        let distance = &self.center_final - center_initial;
+        center_initial + ((elapsed_time / movement_time) * &distance)
+    }
+}
+
 #[derive(Debug)]
 pub enum Shape {
     Sphere(Sphere),
+    MovingSphere(Moving<Sphere>),
 }
 
 impl Shape {
     pub fn sphere(x: f64, y: f64, z: f64, radius: f64, material: Material) -> Shape {
         let center = Vec3::new(x, y, z);
-        let sphere: Sphere = Sphere::new(center.clone(), center, radius, material, 0.0, 1.0);
+        let sphere: Sphere = Sphere::new(center, radius, material);
         Shape::Sphere(sphere)
     }
 
@@ -187,15 +258,11 @@ impl Shape {
     ) -> Shape {
         let center_initial = Vec3::new(x0, y0, z0);
         let center_final = Vec3::new(x1, y1, z1);
-        let sphere: Sphere = Sphere::new(
-            center_initial,
-            center_final,
-            radius,
-            material,
-            time_start,
-            time_end,
-        );
-        Shape::Sphere(sphere)
+        let sphere: Sphere = Sphere::new(center_initial, radius, material);
+
+        let sphere = Moving::new(sphere, center_final, time_start, time_end);
+
+        Shape::MovingSphere(sphere)
     }
 }
 
@@ -203,12 +270,17 @@ impl<'a, T: Rng> Hittable<'a, T> for Shape {
     fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
         match self {
             Shape::Sphere(sphere) => sphere.hit(ray, t_min, t_max),
+            Shape::MovingSphere(sphere) => sphere.hit(ray, t_min, t_max),
         }
     }
 
     fn bounding_box(&self, time_start: f64, time_end: f64) -> Option<AABB> {
         match self {
             Shape::Sphere(sphere) => {
+                let sphere: &dyn Hittable<'a, T> = sphere;
+                sphere.bounding_box(time_start, time_end)
+            }
+            Shape::MovingSphere(sphere) => {
                 let sphere: &dyn Hittable<'a, T> = sphere;
                 sphere.bounding_box(time_start, time_end)
             }

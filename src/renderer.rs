@@ -77,7 +77,7 @@ fn render<'a, T: Rng>(
         let v = (j as f64 + rng.random_double()) / (screen_height as f64);
 
         let ray = camera.ray(rng, u, v);
-        pixel += color(rng, &ray, world, 0);
+        pixel += color(rng, &ray, world, 50);
     }
     pixel /= antialias_iterations as f64;
     pixel = Vec3::new(pixel.r().sqrt(), pixel.g().sqrt(), pixel.b().sqrt());
@@ -86,21 +86,26 @@ fn render<'a, T: Rng>(
     pixel
 }
 
-fn color<'a, T: Rng>(rng: &mut T, ray: &Ray, world: &'a dyn Hittable<'a, T>, depth: u8) -> Vec3 {
-    if let Some(hit) = world.hit(ray, 0.001, std::f64::INFINITY) {
-        if depth > 50 {
-            return Vec3::new(0.0, 0.0, 0.0);
-        }
+fn color<'a, T: Rng>(
+    rng: &mut T,
+    ray: &Ray,
+    world: &'a dyn Hittable<'a, T>,
+    max_depth: u8,
+) -> Vec3 {
+    if max_depth == 0 {
+        return Vec3::new(0.0, 0.0, 0.0);
+    }
 
-        if let Some(scatter) = hit.material().scatter(rng, ray, &hit) {
-            color(rng, scatter.scattered(), world, depth + 1) * scatter.attenuation()
+    if let Some(hit) = world.hit(ray, 0.001, std::f64::INFINITY) {
+        return if let Some(scatter) = hit.material().scatter(rng, ray, &hit) {
+            color(rng, scatter.scattered(), world, max_depth - 1) * scatter.attenuation()
         } else {
             Vec3::new(0.0, 0.0, 0.0)
-        }
-    } else {
-        let unit = ray.direction().unit();
-        let t = 0.5 * (unit.y() + 1.0);
-
-        (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0)
+        };
     }
+
+    let unit = ray.direction().unit();
+    let t = 0.5 * (unit.y() + 1.0);
+
+    (1.0 - t) * Vec3::new(1.0, 1.0, 1.0) + t * Vec3::new(0.5, 0.7, 1.0)
 }

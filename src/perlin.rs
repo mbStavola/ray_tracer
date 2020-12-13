@@ -87,7 +87,7 @@ impl Perlin {
 
 fn generate_perm<T: Rng>(rng: &mut T) -> [i32; POINT_COUNT] {
     let mut vec = (0..POINT_COUNT as i32).rev().collect_vec();
-    &vec.shuffle(rng);
+    vec.shuffle(rng);
 
     let mut p: [i32; POINT_COUNT] = [0; POINT_COUNT];
     for (index, value) in vec.into_iter().enumerate() {
