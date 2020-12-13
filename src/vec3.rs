@@ -1,4 +1,3 @@
-use crate::util::RandomDouble;
 use core::fmt;
 use rand::Rng;
 use serde::{
