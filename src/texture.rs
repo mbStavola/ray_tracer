@@ -71,7 +71,7 @@ impl NoiseTexture {
 impl Texturable for NoiseTexture {
     fn value(&self, _u: f64, _v: f64, p: &Vec3) -> Vec3 {
         let p = self.scale * p;
-        Vec3::new(1.0, 1.0, 1.0) * 0.5 * (1.0 + self.noise.noise(&p))
+        Vec3::new(1.0, 1.0, 1.0) * self.noise.turbulence(&p, 7)
     }
 }
 

@@ -35,6 +35,20 @@ impl Perlin {
         }
     }
 
+    pub fn turbulence(&self, p: &Vec3, depth: usize) -> f64 {
+        let mut current_p = p.clone();
+        let mut weight: f64 = 1.0;
+
+        let mut accumulator = 0.0;
+        for _ in 0..depth {
+            accumulator += weight * self.noise(&current_p);
+            weight *= 0.5;
+            current_p *= 2.0;
+        }
+
+        accumulator.abs()
+    }
+
     pub fn noise(&self, p: &Vec3) -> f64 {
         let u = p.x() - p.x().floor();
         let v = p.y() - p.y().floor();
