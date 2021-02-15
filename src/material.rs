@@ -37,7 +37,7 @@ impl ScatterResponse {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Lambertian {
     albedo: Texture,
 }
@@ -58,7 +58,7 @@ impl<'a, T: Rng> Scatterable<T> for Lambertian {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Metal {
     albedo: Vec3,
     fuzziness: f64,
@@ -90,7 +90,7 @@ impl<T: Rng> Scatterable<T> for Metal {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Dielectric {
     ref_idx: f64,
 }
@@ -130,7 +130,7 @@ impl<T: Rng> Scatterable<T> for Dielectric {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DiffuseLight {
     texture: Texture,
 }
@@ -151,7 +151,7 @@ impl<T: Rng> Scatterable<T> for DiffuseLight {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Material {
     Lambertian(Lambertian),
     Dielectric(Dielectric),

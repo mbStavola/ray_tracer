@@ -343,6 +343,129 @@ impl<'a, T: Rng> Hittable<'a, T> for YzRect {
 }
 
 #[derive(Debug)]
+enum Rect {
+    Xy(XyRect),
+    Xz(XzRect),
+    Yz(YzRect),
+}
+
+impl Rect {
+    pub fn xy(x0: f64, x1: f64, y0: f64, y1: f64, k: f64, material: Material) -> Self {
+        let rect = XyRect::new(x0, x1, y0, y1, k, material);
+        Self::Xy(rect)
+    }
+
+    pub fn xz(x0: f64, x1: f64, z0: f64, z1: f64, k: f64, material: Material) -> Self {
+        let rect = XzRect::new(x0, x1, z0, z1, k, material);
+        Self::Xz(rect)
+    }
+
+    pub fn yz(y0: f64, y1: f64, z0: f64, z1: f64, k: f64, material: Material) -> Self {
+        let rect = YzRect::new(y0, y1, z0, z1, k, material);
+        Self::Yz(rect)
+    }
+}
+
+impl<'a, T: Rng> Hittable<'a, T> for Rect {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
+        match self {
+            Rect::Xy(rect) => rect.hit(ray, t_min, t_max),
+            Rect::Xz(rect) => rect.hit(ray, t_min, t_max),
+            Rect::Yz(rect) => rect.hit(ray, t_min, t_max),
+        }
+    }
+
+    fn bounding_box(&self, time_start: f64, time_end: f64) -> Option<AABB> {
+        match self {
+            Rect::Xy(rect) => {
+                let rect: &dyn Hittable<'a, T> = rect;
+                rect.bounding_box(time_start, time_end)
+            }
+            Rect::Xz(rect) => {
+                let rect: &dyn Hittable<'a, T> = rect;
+                rect.bounding_box(time_start, time_end)
+            }
+            Rect::Yz(rect) => {
+                let rect: &dyn Hittable<'a, T> = rect;
+                rect.bounding_box(time_start, time_end)
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Cube {
+    min: Vec3,
+    max: Vec3,
+    sides: [Rect; 6],
+}
+
+impl Cube {
+    fn new(p0: Vec3, p1: Vec3, material: Material) -> Self {
+        let sides = [
+            Rect::xy(p0.x(), p1.x(), p0.y(), p1.y(), p0.z(), material.clone()),
+            Rect::xy(p0.x(), p1.x(), p0.y(), p1.y(), p1.z(), material.clone()),
+            Rect::xz(p0.x(), p1.x(), p0.z(), p1.z(), p1.y(), material.clone()),
+            Rect::xz(p0.x(), p1.x(), p0.z(), p1.z(), p0.y(), material.clone()),
+            Rect::yz(p0.y(), p1.y(), p0.z(), p1.z(), p1.x(), material.clone()),
+            Rect::yz(p0.y(), p1.y(), p0.z(), p1.z(), p0.x(), material),
+        ];
+
+        Self {
+            min: p0,
+            max: p1,
+            sides,
+        }
+    }
+}
+
+impl Center for Cube {
+    fn center(&self, _time: f64) -> Vec3 {
+        let x = self.max.x() - self.min.x();
+        let y = self.max.y() - self.min.y();
+        let z = self.max.z() - self.min.z();
+
+        Vec3::new(x / 2.0, y / 2.0, z / 2.0)
+    }
+}
+
+impl<'a, T: Rng> Hittable<'a, T> for Cube {
+    fn hit(&self, ray: &Ray, t_min: f64, t_max: f64) -> Option<Hit<'_, T>> {
+        let mut min_distance = t_max;
+        let mut nearest_hit = None;
+
+        for hittable in self.sides.iter() {
+            if let Some(hit) = hittable.hit(ray, t_min, min_distance) {
+                min_distance = hit.t();
+                nearest_hit = Some(hit);
+            }
+        }
+
+        nearest_hit
+    }
+
+    fn bounding_box(&self, time_start: f64, time_end: f64) -> Option<AABB> {
+        let mut aabb = self.sides.first().and_then(|it| {
+            let it: &dyn Hittable<'a, T> = it;
+            it.bounding_box(time_start, time_end)
+        })?;
+
+        for shape in self.sides.iter().skip(1) {
+            let shape: &dyn Hittable<'a, T> = shape;
+
+            if let Some(new_aabb) = shape.bounding_box(time_start, time_end) {
+                aabb = aabb.surrounding_box(&new_aabb);
+                continue;
+            }
+
+            return None;
+        }
+
+        Some(aabb)
+    }
+}
+
+#[derive(Debug)]
 pub struct Moving<T: Center + Debug> {
     object: T,
     center_final: Vec3,
@@ -443,6 +566,7 @@ pub enum Shape {
     XyRect(XyRect),
     XzRect(XzRect),
     YzRect(YzRect),
+    Cube(Cube),
     MovingSphere(Moving<Sphere>),
 }
 
@@ -466,6 +590,14 @@ impl Shape {
     pub fn yz_rect(y0: f64, y1: f64, z0: f64, z1: f64, k: f64, material: Material) -> Self {
         let rect = YzRect::new(y0, y1, z0, z1, k, material);
         Self::YzRect(rect)
+    }
+
+    pub fn cube(x0: f64, y0: f64, z0: f64, x1: f64, y1: f64, z1: f64, material: Material) -> Self {
+        let p0 = Vec3::new(x0, y0, z0);
+        let p1 = Vec3::new(x1, y1, z1);
+
+        let cube = Cube::new(p0, p1, material);
+        Self::Cube(cube)
     }
 
     pub fn moving_sphere(
@@ -497,6 +629,7 @@ impl<'a, T: Rng> Hittable<'a, T> for Shape {
             Shape::XyRect(rect) => rect.hit(ray, t_min, t_max),
             Shape::XzRect(rect) => rect.hit(ray, t_min, t_max),
             Shape::YzRect(rect) => rect.hit(ray, t_min, t_max),
+            Shape::Cube(cube) => cube.hit(ray, t_min, t_max),
             Shape::MovingSphere(sphere) => sphere.hit(ray, t_min, t_max),
         }
     }
@@ -518,6 +651,10 @@ impl<'a, T: Rng> Hittable<'a, T> for Shape {
             Shape::YzRect(rect) => {
                 let rect: &dyn Hittable<'a, T> = rect;
                 rect.bounding_box(time_start, time_end)
+            }
+            Shape::Cube(cube) => {
+                let cube: &dyn Hittable<'a, T> = cube;
+                cube.bounding_box(time_start, time_end)
             }
             Shape::MovingSphere(sphere) => {
                 let sphere: &dyn Hittable<'a, T> = sphere;

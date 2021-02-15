@@ -223,58 +223,24 @@ fn simple_light<T: Rng>(rng: &mut T) -> Vec<Shape> {
 }
 
 fn cornell_box() -> Vec<Shape> {
-    let left_wall = Shape::yz_rect(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        555.0,
-        Material::lambertian(0.12, 0.45, 0.15),
-    );
+    let red = Material::lambertian(0.65, 0.05, 0.05);
+    let green = Material::lambertian(0.12, 0.45, 0.15);
+    let white = Material::lambertian(0.73, 0.73, 0.73);
+    let light = Material::diffuse_light(Texture::constant(15.0, 15.0, 15.0));
 
-    let right_wall = Shape::yz_rect(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        0.0,
-        Material::lambertian(0.65, 0.05, 0.05),
-    );
+    let left_wall = Shape::yz_rect(0.0, 555.0, 0.0, 555.0, 555.0, green);
+    let right_wall = Shape::yz_rect(0.0, 555.0, 0.0, 555.0, 0.0, red);
 
-    let light = Shape::xz_rect(
-        213.0,
-        343.0,
-        227.0,
-        332.0,
-        554.0,
-        Material::diffuse_light(Texture::constant(15.0, 15.0, 15.0)),
-    );
+    let light = Shape::xz_rect(213.0, 343.0, 227.0, 332.0, 554.0, light);
 
-    let floor = Shape::xz_rect(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        0.0,
-        Material::lambertian(0.73, 0.73, 0.73),
-    );
-    let ceiling = Shape::xz_rect(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        555.0,
-        Material::lambertian(0.73, 0.73, 0.73),
-    );
+    let floor = Shape::xz_rect(0.0, 555.0, 0.0, 555.0, 0.0, white.clone());
+    let ceiling = Shape::xz_rect(0.0, 555.0, 0.0, 555.0, 555.0, white.clone());
+    let back_wall = Shape::xy_rect(0.0, 555.0, 0.0, 555.0, 555.0, white.clone());
 
-    let back_wall = Shape::xy_rect(
-        0.0,
-        555.0,
-        0.0,
-        555.0,
-        555.0,
-        Material::lambertian(0.73, 0.73, 0.73),
-    );
+    let box_a = Shape::cube(130.0, 0.0, 65.0, 295.0, 165.0, 230.0, white.clone());
+    let box_b = Shape::cube(265.0, 0.0, 295.0, 430.0, 330.0, 460.0, white);
 
-    vec![left_wall, right_wall, light, floor, ceiling, back_wall]
+    vec![
+        left_wall, right_wall, light, floor, ceiling, back_wall, box_a, box_b,
+    ]
 }
