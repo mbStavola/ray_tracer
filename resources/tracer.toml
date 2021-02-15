@@ -2,18 +2,18 @@
 type = "ppm"
 
 [renderer]
-screen_width = 400
-screen_height = 225
-antialias_iterations = 100
+screen_width = 600
+screen_height = 400
+antialias_iterations = 200
 render_parallel = true
 use_bounding_volume = true
 
 [world]
-scene = "Dynamic"
+scene = "CornellBox"
 max_objects = 1000
 
 [camera]
 aperture = 0.0
-fov = 20.0
-look_from = { x = 13.0, y = 2.0, z = 3.0 }
-look_at = { x = 0.0, y = 0.0, z = 0.0 }
+fov = 40.0
+look_from = { x = 278.0, y = 278.0, z = -800.0 }
+look_at = { x = 278.0, y = 278.0, z = 0.0 }

@@ -18,6 +18,8 @@ pub fn gen_world<T: Rng>(
         WorldConfig::Checker => two_checker_spheres(),
         WorldConfig::Perlin => two_perlin_spheres(rng),
         WorldConfig::Earth => earth(),
+        WorldConfig::SimpleLight => simple_light(rng),
+        WorldConfig::CornellBox => cornell_box(),
     };
 
     BoundingVolumeHierarchy::new(rng, world, time_initial, time_final)
@@ -199,4 +201,80 @@ fn earth() -> Vec<Shape> {
     let texture = Texture::image("resources/earthmap.jpg");
     let globe = Shape::sphere(0.0, 0.0, 0.0, 2.0, Material::textured(texture));
     vec![globe]
+}
+
+fn simple_light<T: Rng>(rng: &mut T) -> Vec<Shape> {
+    let noise = Texture::noise(rng);
+    let sphere_a = Shape::sphere(0.0, -1000.0, 0.0, 1000.0, Material::textured(noise.clone()));
+    let sphere_b = Shape::sphere(0.0, 2.0, 0.0, 2.0, Material::textured(noise));
+
+    let color = Texture::constant(4.0, 4.0, 4.0);
+    let light_square = Shape::xy_rect(
+        3.0,
+        5.0,
+        1.0,
+        3.0,
+        -2.0,
+        Material::diffuse_light(color.clone()),
+    );
+    let light_sphere = Shape::sphere(0.0, 7.0, 0.0, 2.0, Material::diffuse_light(color));
+
+    vec![sphere_a, sphere_b, light_square, light_sphere]
+}
+
+fn cornell_box() -> Vec<Shape> {
+    let left_wall = Shape::yz_rect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        Material::lambertian(0.12, 0.45, 0.15),
+    );
+
+    let right_wall = Shape::yz_rect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        0.0,
+        Material::lambertian(0.65, 0.05, 0.05),
+    );
+
+    let light = Shape::xz_rect(
+        213.0,
+        343.0,
+        227.0,
+        332.0,
+        554.0,
+        Material::diffuse_light(Texture::constant(15.0, 15.0, 15.0)),
+    );
+
+    let floor = Shape::xz_rect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        0.0,
+        Material::lambertian(0.73, 0.73, 0.73),
+    );
+    let ceiling = Shape::xz_rect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        Material::lambertian(0.73, 0.73, 0.73),
+    );
+
+    let back_wall = Shape::xy_rect(
+        0.0,
+        555.0,
+        0.0,
+        555.0,
+        555.0,
+        Material::lambertian(0.73, 0.73, 0.73),
+    );
+
+    vec![left_wall, right_wall, light, floor, ceiling, back_wall]
 }

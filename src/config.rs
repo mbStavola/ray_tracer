@@ -190,6 +190,8 @@ pub enum WorldConfig {
     Checker,
     Perlin,
     Earth,
+    SimpleLight,
+    CornellBox,
 }
 
 impl WorldConfig {

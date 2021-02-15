@@ -80,7 +80,11 @@ fn main() {
     let antialias_iterations = tracer_config.renderer_config().antialias_iterations();
     let render_parallel = tracer_config.renderer_config().render_parallel();
     let use_bounding_volume = tracer_config.renderer_config().use_bounding_volume();
+    // let background = Vec3::new(0.70, 0.80, 1.00);
+    let background = Vec3::new(0.0, 0.0, 0.0);
+
     let buffer: Vec<u8> = render_world(
+        &background,
         &world,
         &camera,
         screen_width,

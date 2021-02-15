@@ -10,6 +10,9 @@ use crate::{
 
 pub trait Scatterable<T: Rng> {
     fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse>;
+    fn emit(&self, _u: f64, _v: f64, _p: &Vec3) -> Vec3 {
+        Vec3::default()
+    }
 }
 
 pub struct ScatterResponse {
@@ -100,31 +103,27 @@ impl Dielectric {
 
 impl<T: Rng> Scatterable<T> for Dielectric {
     fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
-        let (outward_normal, ni_over_nt, cosine) = if ray.direction().dot(hit.normal()) > 0.0 {
-            let cosine =
-                self.ref_idx * ray.direction().dot(hit.normal()) / ray.direction().length();
-            (-hit.normal().clone(), self.ref_idx, cosine)
+        let refraction_ratio = if hit.is_front_facing() {
+            1.0 / self.ref_idx
         } else {
-            let cosine = -ray.direction().dot(hit.normal()) / ray.direction().length();
-            (hit.normal().clone(), 1.0 / self.ref_idx, cosine)
+            self.ref_idx
         };
 
-        let reflected = reflect(ray.direction(), hit.normal());
-        let (reflect_prob, r) =
-            if let Some(ref refraction) = refract(ray.direction(), &outward_normal, ni_over_nt) {
-                let reflect_prob = schlick(cosine, self.ref_idx);
-                (reflect_prob, refraction.clone())
+        let unit_direction = ray.direction().unit();
+        let cos_theta = (-unit_direction.clone()).dot(hit.normal()).min(1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+
+        let cannot_refract = refraction_ratio * sin_theta > 1.0;
+
+        let direction =
+            if cannot_refract || schlick(cos_theta, refraction_ratio) > rng.random_double() {
+                reflect(&unit_direction, hit.normal())
             } else {
-                (1.0, reflected.clone())
+                refract(&unit_direction, hit.normal(), refraction_ratio)
             };
 
-        let refracted = if rng.random_double() < reflect_prob {
-            Ray::new(hit.p().clone(), reflected, ray.time())
-        } else {
-            Ray::new(hit.p().clone(), r, ray.time())
-        };
-
         let attenuation = Vec3::new(1.0, 1.0, 1.0);
+        let refracted = Ray::new(hit.p().clone(), direction, ray.time());
         let scatter = ScatterResponse::new(refracted, attenuation);
 
         Some(scatter)
@@ -140,15 +139,15 @@ impl DiffuseLight {
     fn new(texture: Texture) -> Self {
         Self { texture }
     }
-
-    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
-        self.texture.value(u, v, p)
-    }
 }
 
 impl<T: Rng> Scatterable<T> for DiffuseLight {
-    fn scatter(&self, rng: &mut T, ray: &Ray, hit: &Hit<'_, T>) -> Option<ScatterResponse> {
-        unimplemented!()
+    fn scatter(&self, _rng: &mut T, _ray: &Ray, _hit: &Hit<'_, T>) -> Option<ScatterResponse> {
+        None
+    }
+
+    fn emit(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        self.texture.value(u, v, p)
     }
 }
 
@@ -198,6 +197,15 @@ impl<'a, T: Rng> Scatterable<T> for Material {
             Material::DiffuseLight(material) => material.scatter(rng, ray, hit),
         }
     }
+
+    fn emit(&self, u: f64, v: f64, p: &Vec3) -> Vec3 {
+        match self {
+            Material::Lambertian(material) => <dyn Scatterable<T>>::emit(material, u, v, p),
+            Material::Dielectric(material) => <dyn Scatterable<T>>::emit(material, u, v, p),
+            Material::Metal(material) => <dyn Scatterable<T>>::emit(material, u, v, p),
+            Material::DiffuseLight(material) => <dyn Scatterable<T>>::emit(material, u, v, p),
+        }
+    }
 }
 
 fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
@@ -216,21 +224,16 @@ fn random_in_unit_sphere<T: Rng>(rng: &mut T) -> Vec3 {
     p
 }
 
-fn reflect(a: &Vec3, b: &Vec3) -> Vec3 {
-    a - &(2.0 * a.dot(b) * b)
+fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+    v - &(2.0 * v.dot(n) * n)
 }
 
-fn refract(a: &Vec3, b: &Vec3, ni_over_nt: f64) -> Option<Vec3> {
-    let uv = a.unit();
-    let dt = uv.dot(b);
+fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Vec3 {
+    let cos_theta = (-uv.clone()).dot(n).min(1.0);
+    let perpendicular = etai_over_etat * (uv + cos_theta * n);
+    let parallel = -(1.0 - perpendicular.square_length()).abs().sqrt() * n;
 
-    let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
-    if discriminant > 0.0 {
-        let refracted = ni_over_nt * (uv - b * dt) - b * discriminant.sqrt();
-        Some(refracted)
-    } else {
-        None
-    }
+    perpendicular + parallel
 }
 
 fn schlick(cosine: f64, ref_idx: f64) -> f64 {

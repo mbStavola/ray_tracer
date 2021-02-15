@@ -115,7 +115,7 @@ fn build_tree<T: Rng>(
     time_initial: f64,
     time_final: f64,
 ) -> Vec<BVHMember> {
-    let mut nodes = Vec::with_capacity(shapes.len());
+    let mut nodes = Vec::with_capacity(shapes.len() * 2);
 
     let root = build_tree_internal(
         rng,
@@ -129,6 +129,7 @@ fn build_tree<T: Rng>(
 
     // NOTE(Matt): The root is technically at the "end" of the list
     nodes.push(root);
+    nodes.shrink_to_fit();
 
     nodes
 }
