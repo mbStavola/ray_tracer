@@ -69,10 +69,7 @@ fn main() {
         gen_world(&mut rng, tracer_config.world_config(), time_start, time_end)
     };
 
-    println!(
-        "End world gen-- took {} ms",
-        world_gen_start.elapsed().as_millis()
-    );
+    println!("End world gen-- took {:.2?}", world_gen_start.elapsed());
 
     let tracing_start = Instant::now();
     println!("Start tracing");
@@ -94,18 +91,12 @@ fn main() {
         use_bounding_volume,
     );
 
-    println!(
-        "End tracing-- took {} ms",
-        tracing_start.elapsed().as_millis()
-    );
+    println!("End tracing-- took {:.2?}", tracing_start.elapsed());
 
     let ppm_start = Instant::now();
     println!("Start ppm creation");
 
     let output_path = tracer_config.output_config().output_path();
     ppm::create(output_path, screen_width, screen_height, &buffer);
-    println!(
-        "End ppm creation-- took {} ms",
-        ppm_start.elapsed().as_millis()
-    );
+    println!("End ppm creation-- took {:.2?}", ppm_start.elapsed());
 }

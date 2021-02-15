@@ -17,4 +17,6 @@ version = "0.7.3"
 features = ["small_rng"]
 
 [profile.release]
-debug = true
+#debug = true
+lto = "thin"
+codegen-units = 1
